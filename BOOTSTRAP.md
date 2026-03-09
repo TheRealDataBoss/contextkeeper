@@ -45,6 +45,21 @@ Only proceed after Steven explicitly confirms. No implementation before operator
 - If state_machine_status is EXECUTING, assume work is in progress and ask Steven for current status before proceeding.
 
 ## One-Line Bootstrap (paste into any new chat)
-"Read https://raw.githubusercontent.com/TheRealDataBoss/workbench/main/BOOTSTRAP.md and continue [project-name]"
 
-Replace [project-name] with: 3dpie, portfolio-django, or mit-modules
+For 3dpie:
+Fetch these URLs and bootstrap the 3dpie project:
+https://raw.githubusercontent.com/TheRealDataBoss/workbench/main/PROFILE.md
+https://raw.githubusercontent.com/TheRealDataBoss/workbench/main/projects/3dpie/HANDOFF.md
+https://raw.githubusercontent.com/TheRealDataBoss/workbench/main/projects/3dpie/STATE_VECTOR.json
+
+For portfolio-django:
+Fetch these URLs and bootstrap the portfolio-django project:
+https://raw.githubusercontent.com/TheRealDataBoss/workbench/main/PROFILE.md
+https://raw.githubusercontent.com/TheRealDataBoss/workbench/main/projects/portfolio-django/HANDOFF.md
+https://raw.githubusercontent.com/TheRealDataBoss/workbench/main/projects/portfolio-django/STATE_VECTOR.json
+
+For mit-modules:
+Fetch these URLs and bootstrap the mit-modules project:
+https://raw.githubusercontent.com/TheRealDataBoss/workbench/main/PROFILE.md
+https://raw.githubusercontent.com/TheRealDataBoss/workbench/main/projects/mit-modules/HANDOFF.md
+https://raw.githubusercontent.com/TheRealDataBoss/workbench/main/projects/mit-modules/STATE_VECTOR.json
