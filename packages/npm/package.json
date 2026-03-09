@@ -1,0 +1,37 @@
+{
+  "name": "workbench-ai",
+  "version": "0.1.0",
+  "description": "Universal AI session continuity protocol and CLI",
+  "type": "module",
+  "bin": {
+    "workbench": "./bin/workbench.js"
+  },
+  "keywords": [
+    "ai",
+    "claude",
+    "chatgpt",
+    "context",
+    "continuity",
+    "developer-tools",
+    "cli",
+    "session-management"
+  ],
+  "license": "MIT",
+  "author": "TheRealDataBoss",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/TheRealDataBoss/workbench.git"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "commander": "^11.0.0",
+    "chalk": "^5.0.0",
+    "ora": "^7.0.0",
+    "ajv": "^8.0.0",
+    "ajv-formats": "^2.1.0",
+    "simple-git": "^3.0.0",
+    "enquirer": "^2.3.6"
+  }
+}

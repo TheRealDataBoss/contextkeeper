@@ -1,0 +1,61 @@
+name: 'Workbench AI Sync'
+description: 'Sync project state (STATE_VECTOR.json + HANDOFF.md) to your workbench bridge repo for AI session continuity.'
+branding:
+  icon: 'refresh-cw'
+  color: 'blue'
+
+inputs:
+  workbench_repo:
+    description: 'Your workbench bridge repo (e.g. TheRealDataBoss/workbench)'
+    required: true
+  github_token:
+    description: 'GitHub token with write access to the bridge repo'
+    required: true
+  project_name:
+    description: 'Project slug (used as directory name in bridge repo)'
+    required: true
+  state_vector_path:
+    description: 'Path to STATE_VECTOR.json in this repo'
+    required: false
+    default: 'handoff/STATE_VECTOR.json'
+  handoff_path:
+    description: 'Path to HANDOFF.md in this repo'
+    required: false
+    default: 'docs/HANDOFF.md'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Validate inputs
+      shell: bash
+      run: |
+        if [ -z "${{ inputs.workbench_repo }}" ]; then
+          echo "::error::workbench_repo is required"
+          exit 1
+        fi
+        if [ -z "${{ inputs.project_name }}" ]; then
+          echo "::error::project_name is required"
+          exit 1
+        fi
+
+    - name: Check state files exist
+      shell: bash
+      run: |
+        if [ ! -f "${{ inputs.state_vector_path }}" ]; then
+          echo "::error::STATE_VECTOR.json not found at ${{ inputs.state_vector_path }}"
+          exit 1
+        fi
+        if [ ! -f "${{ inputs.handoff_path }}" ]; then
+          echo "::warning::HANDOFF.md not found at ${{ inputs.handoff_path }}. Only STATE_VECTOR.json will be synced."
+        fi
+
+    - name: Sync to workbench bridge repo
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.github_token }}
+        WORKBENCH_REPO: ${{ inputs.workbench_repo }}
+        PROJECT_NAME: ${{ inputs.project_name }}
+        STATE_VECTOR_PATH: ${{ inputs.state_vector_path }}
+        HANDOFF_PATH: ${{ inputs.handoff_path }}
+      run: |
+        ${{ github.action_path }}/entrypoint.sh
