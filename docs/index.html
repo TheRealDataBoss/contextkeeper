@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>contextkeeper — Zero model drift between AI agents</title>
+  <meta name="description" content="Switch AI models mid-project. Your AI picks up exactly where you left off. Zero context loss. Available on PyPI and npm.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg: #080c14;
+      --cyan: #00e5ff;
+      --purple: #7b61ff;
+      --green: #00ffa3;
+      --text: #c8d6e5;
+      --text-dim: #5a6a7a;
+      --card-bg: #0d1117;
+      --border: #1a2332;
+      --mono: 'Space Mono', monospace;
+      --display: 'Syne', sans-serif;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: var(--mono);
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    /* Grid overlay */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(0,229,255,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,229,255,0.03) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    section, footer { position: relative; z-index: 1; }
+
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    /* ─── HERO ─── */
+    .hero {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 80px 24px;
+    }
+
+    .badge {
+      display: inline-block;
+      font-size: 0.75rem;
+      padding: 6px 18px;
+      border: 1px solid var(--cyan);
+      border-radius: 999px;
+      color: var(--cyan);
+      margin-bottom: 32px;
+      animation: pulse-border 2.5s ease-in-out infinite;
+    }
+
+    @keyframes pulse-border {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(0,229,255,0.4); }
+      50% { box-shadow: 0 0 0 8px rgba(0,229,255,0); }
+    }
+
+    .hero h1 {
+      font-family: var(--display);
+      font-weight: 800;
+      font-size: clamp(2.8rem, 7vw, 5rem);
+      letter-spacing: -0.02em;
+      line-height: 1.1;
+      margin-bottom: 20px;
+    }
+
+    .hero h1 .cyan { color: var(--cyan); }
+
+    .tagline {
+      font-size: clamp(0.95rem, 1.8vw, 1.15rem);
+      color: var(--text-dim);
+      max-width: 640px;
+      margin: 0 auto 40px;
+      line-height: 1.7;
+    }
+
+    .install-block {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      display: inline-flex;
+      align-items: center;
+      gap: 16px;
+      padding: 14px 20px;
+      font-size: 1rem;
+      margin-bottom: 32px;
+    }
+
+    .install-block code { color: var(--green); }
+    .install-block .prompt { color: var(--text-dim); }
+
+    .copy-btn {
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--text-dim);
+      border-radius: 4px;
+      padding: 4px 10px;
+      cursor: pointer;
+      font-family: var(--mono);
+      font-size: 0.75rem;
+      transition: all 0.2s;
+    }
+    .copy-btn:hover { color: var(--cyan); border-color: var(--cyan); }
+
+    .meta-pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: center;
+    }
+
+    .pill {
+      font-size: 0.7rem;
+      padding: 4px 14px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      color: var(--text-dim);
+    }
+
+    /* ─── PROBLEM ─── */
+    .problem { padding: 100px 24px; }
+
+    .section-heading {
+      font-family: var(--display);
+      font-weight: 700;
+      font-size: clamp(1.8rem, 4vw, 2.6rem);
+      text-align: center;
+      margin-bottom: 32px;
+    }
+
+    .warning-strip {
+      background: rgba(255,180,0,0.06);
+      border-left: 3px solid #ffb400;
+      padding: 20px 24px;
+      border-radius: 0 8px 8px 0;
+      max-width: 760px;
+      margin: 0 auto 28px;
+      color: var(--text);
+      font-size: 0.9rem;
+      line-height: 1.7;
+    }
+
+    .solution-text {
+      text-align: center;
+      max-width: 680px;
+      margin: 0 auto;
+      font-size: 1rem;
+      color: var(--text);
+    }
+
+    .solution-text strong { color: var(--cyan); }
+
+    /* ─── HOW IT WORKS ─── */
+    .how-it-works { padding: 100px 24px; }
+
+    .steps-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 24px;
+      max-width: 960px;
+      margin: 0 auto 48px;
+    }
+
+    .step-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 28px 22px;
+    }
+
+    .step-num {
+      font-family: var(--display);
+      font-weight: 800;
+      font-size: 1.6rem;
+      color: var(--purple);
+      margin-bottom: 10px;
+    }
+
+    .step-card h3 {
+      font-family: var(--display);
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: #fff;
+    }
+
+    .step-card p { font-size: 0.8rem; color: var(--text-dim); }
+
+    .terminal-demo {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      max-width: 720px;
+      margin: 0 auto;
+      overflow: hidden;
+    }
+
+    .terminal-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 16px;
+      background: #161b22;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .terminal-dot {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+    }
+    .terminal-dot.red { background: #ff5f57; }
+    .terminal-dot.yellow { background: #febc2e; }
+    .terminal-dot.green { background: #28c840; }
+
+    .terminal-body {
+      padding: 20px;
+      font-size: 0.82rem;
+      line-height: 1.8;
+      overflow-x: auto;
+    }
+
+    .terminal-body .prompt-line { color: var(--text-dim); }
+    .terminal-body .cmd { color: var(--green); }
+    .terminal-body .output { color: var(--text); }
+    .terminal-body .accent { color: var(--cyan); }
+    .terminal-body .ok { color: var(--green); }
+
+    /* ─── COMPATIBILITY ─── */
+    .compatibility { padding: 100px 24px; }
+
+    .compat-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 16px;
+      max-width: 720px;
+      margin: 0 auto;
+    }
+
+    .compat-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 24px 16px;
+      text-align: center;
+      transition: border-color 0.2s;
+    }
+
+    .compat-card:hover { border-color: var(--cyan); }
+
+    .compat-card .name {
+      font-family: var(--display);
+      font-weight: 600;
+      font-size: 1rem;
+      color: #fff;
+    }
+
+    .compat-card .sub {
+      font-size: 0.7rem;
+      color: var(--text-dim);
+      margin-top: 4px;
+    }
+
+    /* ─── COMMANDS ─── */
+    .commands { padding: 100px 24px; }
+
+    .commands-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 20px;
+      max-width: 960px;
+      margin: 0 auto;
+    }
+
+    .cmd-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 24px;
+    }
+
+    .cmd-card h3 {
+      font-family: var(--display);
+      font-weight: 600;
+      color: var(--cyan);
+      font-size: 1rem;
+      margin-bottom: 6px;
+    }
+
+    .cmd-card .desc {
+      font-size: 0.8rem;
+      color: var(--text-dim);
+      margin-bottom: 14px;
+    }
+
+    .cmd-card pre {
+      background: #161b22;
+      border-radius: 6px;
+      padding: 12px 14px;
+      font-size: 0.78rem;
+      color: var(--green);
+      margin-bottom: 12px;
+      overflow-x: auto;
+    }
+
+    .flag-pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .flag-pill {
+      font-size: 0.65rem;
+      padding: 3px 10px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      color: var(--purple);
+    }
+
+    /* ─── FOOTER ─── */
+    footer {
+      padding: 60px 24px;
+      border-top: 1px solid var(--border);
+      text-align: center;
+    }
+
+    .footer-brand {
+      font-family: var(--display);
+      font-weight: 700;
+      font-size: 1.2rem;
+      color: #fff;
+      margin-bottom: 16px;
+    }
+
+    .footer-brand .cyan { color: var(--cyan); }
+
+    .footer-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 24px;
+      justify-content: center;
+    }
+
+    .footer-links a {
+      color: var(--text-dim);
+      text-decoration: none;
+      font-size: 0.8rem;
+      transition: color 0.2s;
+    }
+
+    .footer-links a:hover { color: var(--cyan); }
+
+    .footer-copy {
+      margin-top: 24px;
+      font-size: 0.7rem;
+      color: var(--text-dim);
+    }
+
+    /* ─── RESPONSIVE ─── */
+    @media (max-width: 600px) {
+      .install-block { flex-direction: column; gap: 10px; }
+      .steps-grid { grid-template-columns: 1fr; }
+      .commands-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ─── HERO ─── -->
+  <section class="hero">
+    <span class="badge">v0.2.7 &mdash; now on PyPI &amp; npm</span>
+    <h1>context<span class="cyan">keeper</span></h1>
+    <p class="tagline">Zero model drift between AI agents. Switch models mid-project. Your AI picks up exactly where you left off.</p>
+
+    <div class="install-block">
+      <span><span class="prompt">$</span> <code>pip install contextkeeper</code></span>
+      <button class="copy-btn" onclick="navigator.clipboard.writeText('pip install contextkeeper').then(()=>{this.textContent='copied!';setTimeout(()=>this.textContent='copy',1500)})">copy</button>
+    </div>
+
+    <div class="meta-pills">
+      <span class="pill">Python 3.10+</span>
+      <span class="pill">Node 18+</span>
+      <span class="pill">MIT License</span>
+      <span class="pill">git required</span>
+    </div>
+  </section>
+
+  <!-- ─── PROBLEM ─── -->
+  <section class="problem">
+    <div class="container">
+      <h2 class="section-heading">AI agents forget everything.</h2>
+
+      <div class="warning-strip">
+        Every time you start a new chat, switch models, or hit a context limit, your AI loses all project knowledge &mdash; architecture decisions, coding conventions, task progress, what was tried and failed. You re-explain the same things over and over. That's model drift, and it kills productivity.
+      </div>
+
+      <p class="solution-text">
+        <strong>contextkeeper</strong> captures your project's full state vector &mdash; decisions, progress, conventions, and active tasks &mdash; in a single portable file that any AI agent can bootstrap from instantly.
+      </p>
+    </div>
+  </section>
+
+  <!-- ─── HOW IT WORKS ─── -->
+  <section class="how-it-works">
+    <div class="container">
+      <h2 class="section-heading">How it works</h2>
+
+      <div class="steps-grid">
+        <div class="step-card">
+          <div class="step-num">01</div>
+          <h3>init</h3>
+          <p>Scaffolds a project context directory with state vector, conventions, and task tracking.</p>
+        </div>
+        <div class="step-card">
+          <div class="step-num">02</div>
+          <h3>sync</h3>
+          <p>Scans your repo and updates the state vector with current project reality &mdash; files, deps, structure.</p>
+        </div>
+        <div class="step-card">
+          <div class="step-num">03</div>
+          <h3>bootstrap</h3>
+          <p>Generates a ready-to-paste briefing that brings any AI agent up to speed in one prompt.</p>
+        </div>
+        <div class="step-card">
+          <div class="step-num">04</div>
+          <h3>doctor</h3>
+          <p>Validates your context files for consistency, missing fields, and structural issues.</p>
+        </div>
+      </div>
+
+      <div class="terminal-demo">
+        <div class="terminal-bar">
+          <div class="terminal-dot red"></div>
+          <div class="terminal-dot yellow"></div>
+          <div class="terminal-dot green"></div>
+        </div>
+        <div class="terminal-body">
+          <div><span class="prompt-line">~/myproject $</span> <span class="cmd">contextkeeper init myproject</span></div>
+          <div class="output"><span class="ok">&#10003;</span> Created projects/myproject/STATE_VECTOR.json</div>
+          <div class="output"><span class="ok">&#10003;</span> Created projects/myproject/CONVENTIONS.md</div>
+          <div class="output"><span class="ok">&#10003;</span> Created projects/myproject/TASKS.md</div>
+          <br>
+          <div><span class="prompt-line">~/myproject $</span> <span class="cmd">contextkeeper sync myproject</span></div>
+          <div class="output"><span class="accent">&#8594;</span> Scanning repository structure...</div>
+          <div class="output"><span class="accent">&#8594;</span> Detecting dependencies...</div>
+          <div class="output"><span class="ok">&#10003;</span> State vector updated (14 fields synced)</div>
+          <br>
+          <div><span class="prompt-line">~/myproject $</span> <span class="cmd">contextkeeper bootstrap myproject</span></div>
+          <div class="output"><span class="ok">&#10003;</span> Bootstrap prompt copied to clipboard (2.4 KB)</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── COMPATIBILITY ─── -->
+  <section class="compatibility">
+    <div class="container">
+      <h2 class="section-heading">Works with every AI</h2>
+
+      <div class="compat-grid">
+        <div class="compat-card">
+          <div class="name">Claude</div>
+          <div class="sub">Anthropic</div>
+        </div>
+        <div class="compat-card">
+          <div class="name">ChatGPT</div>
+          <div class="sub">OpenAI</div>
+        </div>
+        <div class="compat-card">
+          <div class="name">Gemini</div>
+          <div class="sub">Google</div>
+        </div>
+        <div class="compat-card">
+          <div class="name">Llama</div>
+          <div class="sub">Meta</div>
+        </div>
+        <div class="compat-card">
+          <div class="name">Mistral</div>
+          <div class="sub">Mistral AI</div>
+        </div>
+        <div class="compat-card">
+          <div class="name">Any LLM</div>
+          <div class="sub">Model-agnostic</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── COMMANDS ─── -->
+  <section class="commands">
+    <div class="container">
+      <h2 class="section-heading">Commands</h2>
+
+      <div class="commands-grid">
+        <div class="cmd-card">
+          <h3>init</h3>
+          <p class="desc">Scaffold a new project context with state vector, conventions, and task files.</p>
+          <pre>contextkeeper init &lt;project-name&gt;</pre>
+          <div class="flag-pills">
+            <span class="flag-pill">--path</span>
+            <span class="flag-pill">--template</span>
+          </div>
+        </div>
+
+        <div class="cmd-card">
+          <h3>sync</h3>
+          <p class="desc">Scan your repo and update the state vector with current project state.</p>
+          <pre>contextkeeper sync &lt;project-name&gt;</pre>
+          <div class="flag-pills">
+            <span class="flag-pill">--deep</span>
+            <span class="flag-pill">--dry-run</span>
+          </div>
+        </div>
+
+        <div class="cmd-card">
+          <h3>bootstrap</h3>
+          <p class="desc">Generate a briefing prompt to bring any AI agent up to speed instantly.</p>
+          <pre>contextkeeper bootstrap &lt;project-name&gt;</pre>
+          <div class="flag-pills">
+            <span class="flag-pill">--format</span>
+            <span class="flag-pill">--clipboard</span>
+          </div>
+        </div>
+
+        <div class="cmd-card">
+          <h3>doctor</h3>
+          <p class="desc">Validate context files for consistency, missing fields, and structural issues.</p>
+          <pre>contextkeeper doctor &lt;project-name&gt;</pre>
+          <div class="flag-pills">
+            <span class="flag-pill">--fix</span>
+            <span class="flag-pill">--verbose</span>
+          </div>
+        </div>
+
+        <div class="cmd-card">
+          <h3>list</h3>
+          <p class="desc">List all tracked projects and their current status.</p>
+          <pre>contextkeeper list</pre>
+          <div class="flag-pills">
+            <span class="flag-pill">--json</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── FOOTER ─── -->
+  <footer>
+    <div class="footer-brand">context<span class="cyan">keeper</span></div>
+    <div class="footer-links">
+      <a href="https://pypi.org/project/contextkeeper/" target="_blank" rel="noopener">PyPI</a>
+      <a href="https://www.npmjs.com/package/contextkeeper" target="_blank" rel="noopener">npm</a>
+      <a href="https://github.com/TheRealDataBoss/contextkeeper" target="_blank" rel="noopener">GitHub</a>
+      <a href="https://registry.modelcontextprotocol.io" target="_blank" rel="noopener">MCP Registry</a>
+    </div>
+    <p class="footer-copy">&copy; 2025 Originami. MIT License.</p>
+  </footer>
+
+</body>
+</html>
