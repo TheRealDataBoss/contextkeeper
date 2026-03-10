@@ -1,4 +1,17 @@
 
 packages/npm/node_modules/
 packages/npm/package-lock.json
-packages/python/dist/
+
+# Secrets
+**/.mcpregistry_github_token
+**/.mcpregistry_registry_token
+
+# contextkeeper local state
+**/.contextkeeper/
+
+# Python
+**/__pycache__/
+**/*.pyc
+**/dist/
+**/build/
+**/*.egg-info/
