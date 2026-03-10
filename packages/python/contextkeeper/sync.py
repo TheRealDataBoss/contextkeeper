@@ -78,11 +78,11 @@ def sync_project(bridge: str | None = None, dry_run: bool = False) -> None:
     console.print("  [green]STATE_VECTOR.json is valid[/green]")
 
     if dry_run:
-        console.print("\n  [yellow]Dry run — would sync:[/yellow]")
-        console.print(f"    {sv_rel} → projects/{project_name}/STATE_VECTOR.json")
+        console.print("\n  [yellow]Dry run -- would sync:[/yellow]")
+        console.print(f"    {sv_rel} -> projects/{project_name}/STATE_VECTOR.json")
         handoff_path = cwd / handoff_rel
         if handoff_path.exists():
-            console.print(f"    {handoff_rel} → projects/{project_name}/HANDOFF.md")
+            console.print(f"    {handoff_rel} -> projects/{project_name}/HANDOFF.md")
         console.print()
         return
 

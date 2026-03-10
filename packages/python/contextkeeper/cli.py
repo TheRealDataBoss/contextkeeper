@@ -57,5 +57,13 @@ def bootstrap(
     generate_bootstrap(project=project, bridge=bridge, clipboard=clipboard)
 
 
+@app.command()
+def doctor() -> None:
+    """Check environment and configuration health."""
+    from contextkeeper.doctor import run_doctor
+
+    run_doctor()
+
+
 if __name__ == "__main__":
     app()
