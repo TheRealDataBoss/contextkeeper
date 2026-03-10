@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}Dashboard - contextkeeper{% endblock %}
+{% block content %}
+<div class="mb-8">
+  <h1 class="font-sans text-3xl font-bold mb-2">Dashboard</h1>
+  <p class="text-ck-muted">{{ profile.org.name }} &middot; {{ profile.org.plan|upper }} plan</p>
+</div>
+
+<div class="grid grid-cols-3 gap-4 mb-8">
+  <div class="bg-ck-surface border border-ck-border rounded-lg p-6">
+    <div class="text-3xl font-bold text-ck-cyan">{{ projects|length }}</div>
+    <div class="text-ck-muted text-sm mt-1">Projects</div>
+  </div>
+  <div class="bg-ck-surface border border-ck-border rounded-lg p-6">
+    <div class="text-3xl font-bold text-ck-purple">{{ total_sessions }}</div>
+    <div class="text-ck-muted text-sm mt-1">Sessions</div>
+  </div>
+  <div class="bg-ck-surface border border-ck-border rounded-lg p-6">
+    <div class="text-3xl font-bold text-ck-green">{{ total_handoffs }}</div>
+    <div class="text-ck-muted text-sm mt-1">Handoffs</div>
+  </div>
+</div>
+
+<div class="bg-ck-surface border border-ck-border rounded-lg">
+  <div class="px-6 py-4 border-b border-ck-border flex items-center justify-between">
+    <h2 class="font-sans font-semibold text-lg">Projects</h2>
+  </div>
+  {% if projects %}
+    <div class="divide-y divide-ck-border">
+      {% for project in projects %}
+        <a href="{% url 'dashboard:project-detail' project.project_id %}" class="block px-6 py-4 hover:bg-ck-border/30 transition">
+          <div class="flex items-center justify-between">
+            <div>
+              <span class="font-bold">{{ project.name }}</span>
+              <span class="text-ck-muted ml-2">{{ project.project_id }}</span>
+            </div>
+            <div class="text-sm text-ck-muted">
+              {{ project.coordination }} &middot; {{ project.created_at|date:"M d, Y" }}
+            </div>
+          </div>
+        </a>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="px-6 py-8 text-center text-ck-muted">
+      No projects yet. Use the CLI or API to create one.
+    </div>
+  {% endif %}
+</div>
+{% endblock %}
