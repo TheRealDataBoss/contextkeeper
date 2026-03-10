@@ -1,8 +1,8 @@
 import chalk from 'chalk'
 import ora from 'ora'
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs'
+import { input, confirm } from '@inquirer/prompts'
+import { existsSync, mkdirSync, readdirSync, writeFileSync } from 'fs'
 import { basename, resolve, join } from 'path'
-import { createRequire } from 'module'
 
 const PROJECT_TYPE_SIGNALS = [
   { file: 'manage.py',        type: 'web_app',           label: 'Django web app' },
@@ -24,9 +24,11 @@ function detectProjectType(dir) {
     }
   }
   // Check for notebooks
-  const files = []
   try {
-    const { readdirSync } = await import('fs')
+    const files = readdirSync(dir)
+    if (files.some(f => f.endsWith('.ipynb'))) {
+      return { type: 'research_notebook', label: 'Research notebook', file: '*.ipynb' }
+    }
   } catch {}
   return { type: 'other', label: 'unknown project type', file: null }
 }
@@ -46,9 +48,20 @@ function detectGates(projectType) {
   return gates[projectType] || ['git status']
 }
 
+function safeWriteFile(filePath, content, label) {
+  try {
+    writeFileSync(filePath, content, 'utf8')
+    return true
+  } catch (err) {
+    console.error(chalk.red(`  ✗ write ${label} failed: ${err.code === 'EACCES' ? 'permission denied' : err.code === 'ENOSPC' ? 'disk full' : err.message}`))
+    console.error(chalk.gray(`    → Check permissions on ${filePath}`))
+    return false
+  }
+}
+
 export async function initProject(options) {
   const cwd = resolve('.')
-  const projectName = options.project || basename(cwd)
+  const dirName = basename(cwd)
 
   console.log(chalk.cyan('\n  workbench init\n'))
 
@@ -59,25 +72,46 @@ export async function initProject(options) {
 
   const projectType = options.type || detected.type
 
-  // Prompt for bridge repo if not provided
-  let bridgeRepo = options.bridge || null
-  if (!bridgeRepo) {
-    const Enquirer = (await import('enquirer')).default
-    const response = await new Enquirer().prompt({
-      type: 'input',
-      name: 'bridge',
-      message: 'Bridge repo (e.g. yourname/workbench):',
-      initial: '',
+  // Interactive prompts for missing fields
+  const projectName = options.project || await input({
+    message: 'Project name (slug):',
+    default: dirName,
+  })
+
+  const description = await input({
+    message: 'Project description (one line):',
+    default: '',
+  })
+
+  let bridgeRepo = options.bridge || await input({
+    message: 'Bridge repo (e.g. yourname/workbench):',
+    default: '',
+  }) || null
+
+  // Check for existing STATE_VECTOR.json
+  const handoffDir = join(cwd, 'handoff')
+  const stateVectorPath = join(handoffDir, 'STATE_VECTOR.json')
+  if (existsSync(stateVectorPath)) {
+    const overwrite = await confirm({
+      message: 'STATE_VECTOR.json already exists. Overwrite?',
+      default: false,
     })
-    bridgeRepo = response.bridge || null
+    if (!overwrite) {
+      console.log(chalk.yellow('\n  Aborted. Existing files unchanged.\n'))
+      return
+    }
   }
 
   // Create directories
-  const handoffDir = join(cwd, 'handoff')
   const docsDir = join(cwd, 'docs')
-
-  if (!existsSync(handoffDir)) mkdirSync(handoffDir, { recursive: true })
-  if (!existsSync(docsDir)) mkdirSync(docsDir, { recursive: true })
+  try {
+    mkdirSync(handoffDir, { recursive: true })
+    mkdirSync(docsDir, { recursive: true })
+  } catch (err) {
+    console.error(chalk.red(`  ✗ create directories failed: ${err.code === 'EACCES' ? 'permission denied' : err.message}`))
+    console.error(chalk.gray(`    → Check write permissions on ${cwd}`))
+    process.exit(1)
+  }
 
   // Generate STATE_VECTOR.json
   const stateVector = {
@@ -98,16 +132,18 @@ export async function initProject(options) {
     effective_verified_sha: null,
   }
 
-  const stateVectorPath = join(handoffDir, 'STATE_VECTOR.json')
-  writeFileSync(stateVectorPath, JSON.stringify(stateVector, null, 2) + '\n', 'utf8')
+  if (!safeWriteFile(stateVectorPath, JSON.stringify(stateVector, null, 2) + '\n', 'STATE_VECTOR.json')) {
+    process.exit(1)
+  }
   console.log(chalk.green(`  Created: ${stateVectorPath}`))
 
   // Generate HANDOFF.md
+  const descLine = description || '[FILL IN: Describe this project in one paragraph.]'
   const handoff = `# ${projectName} — Project Handoff
 schema_version: workbench-v1.0
 
 ## What It Is
-[FILL IN: Describe this project in one paragraph.]
+${descLine}
 
 ## Where It Is
 - Local: ${cwd}
@@ -134,7 +170,9 @@ ${stateVector.gates.map(g => `- ${g}`).join('\n')}
 `
 
   const handoffPath = join(docsDir, 'HANDOFF.md')
-  writeFileSync(handoffPath, handoff, 'utf8')
+  if (!safeWriteFile(handoffPath, handoff, 'HANDOFF.md')) {
+    process.exit(1)
+  }
   console.log(chalk.green(`  Created: ${handoffPath}`))
 
   // Write .workbench config
@@ -145,7 +183,9 @@ ${stateVector.gates.map(g => `- ${g}`).join('\n')}
     handoff_path: 'docs/HANDOFF.md',
   }
   const configPath = join(cwd, '.workbench')
-  writeFileSync(configPath, JSON.stringify(config, null, 2) + '\n', 'utf8')
+  if (!safeWriteFile(configPath, JSON.stringify(config, null, 2) + '\n', '.workbench config')) {
+    process.exit(1)
+  }
   console.log(chalk.green(`  Created: ${configPath}`))
 
   console.log(chalk.cyan('\n  Next steps:'))

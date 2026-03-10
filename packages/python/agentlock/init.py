@@ -1,4 +1,4 @@
-"""workbench init — initialize state files in the current project."""
+"""agentlock init — initialize state files in the current project."""
 
 from __future__ import annotations
 

@@ -1,4 +1,4 @@
-"""workbench sync — push state files to the bridge repo."""
+"""agentlock sync — push state files to the bridge repo."""
 
 from __future__ import annotations
 

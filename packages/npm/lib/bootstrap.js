@@ -1,120 +1,109 @@
 import chalk from 'chalk'
-import ora from 'ora'
 import { existsSync, readFileSync } from 'fs'
 import { resolve, join } from 'path'
-import { simpleGit } from 'simple-git'
-import { tmpdir } from 'os'
-import { mkdtempSync, rmSync } from 'fs'
-import { exec } from 'child_process'
-import { platform } from 'os'
+import clipboardy from 'clipboardy'
 
-function loadConfig(cwd) {
-  const configPath = join(cwd, '.workbench')
-  if (!existsSync(configPath)) return null
-  return JSON.parse(readFileSync(configPath, 'utf8'))
+function findStateVector(cwd) {
+  const candidates = [
+    join(cwd, 'handoff', 'STATE_VECTOR.json'),
+    join(cwd, 'STATE_VECTOR.json'),
+    join(cwd, '.workbench', 'STATE_VECTOR.json'),
+  ]
+  for (const p of candidates) {
+    if (existsSync(p)) return p
+  }
+  return null
 }
 
-function copyToClipboard(text) {
-  return new Promise((resolve, reject) => {
-    const os = platform()
-    let cmd
-    if (os === 'darwin') {
-      cmd = 'pbcopy'
-    } else if (os === 'win32') {
-      cmd = 'clip'
-    } else {
-      cmd = 'xclip -selection clipboard'
-    }
-    const proc = exec(cmd, (err) => {
-      if (err) reject(err)
-      else resolve()
-    })
-    proc.stdin.write(text)
-    proc.stdin.end()
-  })
+function parseBridgeRepo(cwd) {
+  const configPath = join(cwd, '.workbench')
+  if (!existsSync(configPath)) return null
+  try {
+    const config = JSON.parse(readFileSync(configPath, 'utf8'))
+    return config.bridge_repo || null
+  } catch {
+    return null
+  }
+}
+
+function extractOwnerRepo(repoUrl) {
+  if (!repoUrl || repoUrl === 'local only') return null
+  // Handle: https://github.com/owner/repo, https://github.com/owner/repo.git, owner/repo
+  const match = repoUrl.match(/(?:github\.com\/)?([^/\s]+\/[^/\s.]+)/)
+  return match ? match[1] : null
 }
 
 export async function generateBootstrap(options) {
   const cwd = resolve('.')
-  const config = loadConfig(cwd)
-  const bridgeRepo = options.bridge || config?.bridge_repo
-  const projectName = options.project
 
   console.log(chalk.cyan('\n  workbench bootstrap\n'))
 
-  if (!bridgeRepo) {
-    console.log(chalk.red('  No bridge repo configured. Run workbench init or pass --bridge.'))
+  // Find and read STATE_VECTOR.json
+  const svPath = findStateVector(cwd)
+  if (!svPath) {
+    console.error(chalk.red('  ✗ bootstrap failed: STATE_VECTOR.json not found'))
+    console.error(chalk.gray('    → Run: workbench init to generate it (looked in handoff/, ./, .workbench/)'))
     process.exit(1)
   }
 
-  // Verify the project exists in the bridge repo
-  const spinner = ora('Verifying project in bridge repo...').start()
-  const tmpDir = mkdtempSync(join(tmpdir(), 'workbench-'))
-
+  let stateVector
   try {
-    const bridgeUrl = `https://github.com/${bridgeRepo}.git`
-    const git = simpleGit()
-    await git.clone(bridgeUrl, tmpDir, ['--depth', '1'])
+    stateVector = JSON.parse(readFileSync(svPath, 'utf8'))
+  } catch {
+    console.error(chalk.red(`  ✗ parse STATE_VECTOR.json failed: file contains invalid JSON`))
+    console.error(chalk.gray(`    → Fix syntax errors in ${svPath} and retry`))
+    process.exit(1)
+  }
 
-    const projectDir = join(tmpDir, 'projects', projectName)
-    if (!existsSync(projectDir)) {
-      spinner.fail(`Project "${projectName}" not found in bridge repo.`)
-      const projectsDir = join(tmpDir, 'projects')
-      if (existsSync(projectsDir)) {
-        const available = readFileSync
-        const { readdirSync } = await import('fs')
-        const projects = readdirSync(projectsDir, { withFileTypes: true })
-          .filter(d => d.isDirectory())
-          .map(d => d.name)
-        if (projects.length > 0) {
-          console.log(chalk.gray(`  Available projects: ${projects.join(', ')}`))
-        }
-      }
-      process.exit(1)
-    }
+  const projectName = options.project || stateVector.project
+  if (!projectName) {
+    console.error(chalk.red('  ✗ bootstrap failed: no project name found'))
+    console.error(chalk.gray('    → Pass --project <name>, or set "project" in STATE_VECTOR.json'))
+    process.exit(1)
+  }
 
-    const hasState = existsSync(join(projectDir, 'STATE_VECTOR.json'))
-    const hasHandoff = existsSync(join(projectDir, 'HANDOFF.md'))
+  // Resolve bridge repo: --bridge flag > .workbench config > STATE_VECTOR.repo
+  const bridgeRepo = options.bridge
+    || parseBridgeRepo(cwd)
+    || extractOwnerRepo(stateVector.repo)
 
-    if (!hasState) {
-      spinner.fail(`No STATE_VECTOR.json found for ${projectName}`)
-      process.exit(1)
-    }
+  if (!bridgeRepo) {
+    console.error(chalk.red('  ✗ bootstrap failed: cannot determine bridge repo'))
+    console.error(chalk.gray('    → Pass --bridge owner/repo, or set bridge_repo in .workbench config'))
+    process.exit(1)
+  }
 
-    spinner.succeed(`Project "${projectName}" verified`)
+  // Build the 3 raw URLs
+  const base = `https://raw.githubusercontent.com/${bridgeRepo}/main`
+  const urls = {
+    profile:  `${base}/PROFILE.md`,
+    handoff:  `${base}/projects/${projectName}/HANDOFF.md`,
+    state:    `${base}/projects/${projectName}/STATE_VECTOR.json`,
+  }
 
-    // Build the bootstrap prompt with all URLs explicit
-    const baseUrl = `https://raw.githubusercontent.com/${bridgeRepo}/main`
-    const urls = [
-      `${baseUrl}/PROFILE.md`,
-      `${baseUrl}/projects/${projectName}/HANDOFF.md`,
-      `${baseUrl}/projects/${projectName}/STATE_VECTOR.json`,
-    ]
+  // Build the paste-ready prompt
+  const prompt = [
+    `Fetch these URLs and bootstrap the ${projectName} project:`,
+    urls.profile,
+    urls.handoff,
+    urls.state,
+  ].join('\n')
 
-    const prompt = [
-      `Fetch these URLs and bootstrap the ${projectName} project:`,
-      ...urls,
-    ].join('\n')
+  // Print formatted block
+  console.log(chalk.white('  Paste this into any new AI chat:\n'))
+  console.log(chalk.green('  ┌──────────────────────────────────────────────────────────────┐'))
+  for (const line of prompt.split('\n')) {
+    console.log(chalk.green('  │ ') + chalk.white(line))
+  }
+  console.log(chalk.green('  └──────────────────────────────────────────────────────────────┘'))
+  console.log()
 
-    console.log(chalk.white('\n  Paste this into any new AI chat:\n'))
-    console.log(chalk.green('  ┌─────────────────────────────────────────────┐'))
-    for (const line of prompt.split('\n')) {
-      console.log(chalk.green('  │ ') + chalk.white(line))
-    }
-    console.log(chalk.green('  └─────────────────────────────────────────────┘'))
-    console.log()
-
-    if (options.clipboard) {
-      try {
-        await copyToClipboard(prompt)
-        console.log(chalk.green('  Copied to clipboard!'))
-      } catch {
-        console.log(chalk.yellow('  Could not copy to clipboard. Copy manually from above.'))
-      }
-    }
-
-    console.log()
-  } finally {
-    try { rmSync(tmpDir, { recursive: true, force: true }) } catch {}
+  // Copy to clipboard
+  try {
+    await clipboardy.write(prompt)
+    console.log(chalk.green('  Bootstrap prompt copied to clipboard. Paste it into Claude or ChatGPT.\n'))
+  } catch {
+    console.log(chalk.yellow('  ✗ clipboard write failed: clipboard not available in this environment'))
+    console.log(chalk.gray('    → Copy the text above manually\n'))
   }
 }

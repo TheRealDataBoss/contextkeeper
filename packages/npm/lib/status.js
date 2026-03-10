@@ -9,7 +9,11 @@ import { mkdtempSync, rmSync } from 'fs'
 function loadConfig(cwd) {
   const configPath = join(cwd, '.workbench')
   if (!existsSync(configPath)) return null
-  return JSON.parse(readFileSync(configPath, 'utf8'))
+  try {
+    return JSON.parse(readFileSync(configPath, 'utf8'))
+  } catch {
+    return null
+  }
 }
 
 function colorStatus(status) {
@@ -38,7 +42,8 @@ export async function showStatus(options) {
   console.log(chalk.cyan('\n  workbench status\n'))
 
   if (!bridgeRepo) {
-    console.log(chalk.red('  No bridge repo configured. Run workbench init or pass --bridge.'))
+    console.error(chalk.red('  ✗ status failed: no bridge repo configured'))
+    console.error(chalk.gray('    → Run: workbench init, or pass --bridge <owner/repo>'))
     process.exit(1)
   }
 
@@ -48,7 +53,24 @@ export async function showStatus(options) {
   try {
     const bridgeUrl = `https://github.com/${bridgeRepo}.git`
     const git = simpleGit()
-    await git.clone(bridgeUrl, tmpDir, ['--depth', '1'])
+    try {
+      await git.clone(bridgeUrl, tmpDir, ['--depth', '1'])
+    } catch (err) {
+      spinner.fail('Fetch failed')
+      const msg = err?.message || String(err)
+      if (msg.includes('not found') || msg.includes('404')) {
+        console.error(chalk.red(`  ✗ git clone failed: repository ${bridgeRepo} not found`))
+        console.error(chalk.gray('    → Verify the bridge repo name is correct'))
+      } else if (msg.includes('could not resolve host') || msg.includes('unable to access')) {
+        console.error(chalk.red('  ✗ git clone failed: network error'))
+        console.error(chalk.gray('    → Check your internet connection and try again'))
+      } else {
+        const cleaned = msg.replace(/https:\/\/[^@\s]+@/g, 'https://***@')
+        console.error(chalk.red(`  ✗ git clone failed: ${cleaned}`))
+        console.error(chalk.gray('    → Check git configuration and bridge repo access'))
+      }
+      process.exit(1)
+    }
     spinner.succeed('Bridge repo loaded')
 
     const projectsDir = join(tmpDir, 'projects')
@@ -73,7 +95,13 @@ export async function showStatus(options) {
         rows.push({ name, type: '?', status: 'NO STATE', task: '-', blocker: '-', updated: '-' })
         continue
       }
-      const sv = JSON.parse(readFileSync(svPath, 'utf8'))
+      let sv
+      try {
+        sv = JSON.parse(readFileSync(svPath, 'utf8'))
+      } catch {
+        rows.push({ name, type: '?', status: 'BAD JSON', task: '-', blocker: '-', updated: '-' })
+        continue
+      }
       rows.push({
         name,
         type: sv.project_type || '?',

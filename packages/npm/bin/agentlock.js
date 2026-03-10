@@ -13,13 +13,13 @@ const pkg = JSON.parse(readFileSync(join(__dirname, '..', 'package.json'), 'utf8
 const program = new Command()
 
 program
-  .name('workbench')
-  .description('Universal AI session continuity protocol and CLI')
+  .name('agentlock')
+  .description('Zero model drift between AI agents. Universal session continuity protocol and CLI for Claude, GPT, Gemini, and any LLM.')
   .version(pkg.version, '-v, --version')
 
 program
   .command('init')
-  .description('Initialize workbench state files in the current project')
+  .description('Initialize agentlock state files in the current project')
   .option('-p, --project <name>', 'Project slug')
   .option('-t, --type <type>', 'Project type')
   .option('--bridge <repo>', 'Bridge repo URL (e.g. user/workbench)')
@@ -30,7 +30,7 @@ program
 
 program
   .command('sync')
-  .description('Sync state files to the workbench bridge repo')
+  .description('Sync state files to the bridge repo')
   .option('--bridge <repo>', 'Bridge repo URL override')
   .option('--dry-run', 'Show what would be synced without pushing')
   .action(async (options) => {
@@ -57,6 +57,14 @@ program
   .action(async (options) => {
     const { generateBootstrap } = await import('../lib/bootstrap.js')
     await generateBootstrap(options)
+  })
+
+program
+  .command('doctor')
+  .description('Check environment and configuration health')
+  .action(async () => {
+    const { runDoctor } = await import('../lib/doctor.js')
+    await runDoctor()
   })
 
 program.parse()

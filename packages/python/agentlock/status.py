@@ -1,4 +1,4 @@
-"""workbench status — show status of all projects in the bridge repo."""
+"""agentlock status — show status of all projects in the bridge repo."""
 
 from __future__ import annotations
 

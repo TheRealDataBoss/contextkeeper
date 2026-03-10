@@ -1,21 +1,21 @@
-# workbench-ai
+# agentlock
 
-Universal AI session continuity protocol and CLI.
+Zero model drift between AI agents. Universal session continuity protocol and CLI for Claude, GPT, Gemini, and any LLM.
 
 ## Install
 
 ```sh
-npm install -g workbench-ai
+npm install -g agentlock
 ```
 
 ## Commands
 
-### `workbench init`
-Initialize workbench state files in the current project. Auto-detects project type, generates STATE_VECTOR.json and HANDOFF.md, and creates a `.workbench` config file.
+### `agentlock init`
+Initialize agentlock state files in the current project. Auto-detects project type, generates STATE_VECTOR.json and HANDOFF.md, and creates a `.workbench` config file.
 
 ```sh
 cd my-project
-workbench init
+agentlock init
 ```
 
 Options:
@@ -23,33 +23,33 @@ Options:
 - `-t, --type <type>` — Project type override
 - `--bridge <repo>` — Bridge repo (e.g. `yourname/workbench`)
 
-### `workbench sync`
-Sync state files to your workbench bridge repo.
+### `agentlock sync`
+Sync state files to your bridge repo.
 
 ```sh
-workbench sync
+agentlock sync
 ```
 
 Options:
 - `--bridge <repo>` — Bridge repo override
 - `--dry-run` — Preview without pushing
 
-### `workbench status`
+### `agentlock status`
 Show status of all projects in the bridge repo.
 
 ```sh
-workbench status --bridge yourname/workbench
+agentlock status --bridge yourname/workbench
 ```
 
 Options:
 - `--bridge <repo>` — Bridge repo
 - `--json` — Output as JSON
 
-### `workbench bootstrap`
+### `agentlock bootstrap`
 Generate a paste-ready bootstrap prompt for any AI chat.
 
 ```sh
-workbench bootstrap -p my-project --clipboard
+agentlock bootstrap -p my-project --clipboard
 ```
 
 Options:
@@ -57,11 +57,18 @@ Options:
 - `--bridge <repo>` — Bridge repo override
 - `--clipboard` — Copy to clipboard
 
+### `agentlock doctor`
+Check environment and configuration health.
+
+```sh
+agentlock doctor
+```
+
 ## How It Works
 
-1. `workbench init` creates structured state files in your project
-2. `workbench sync` pushes them to a central bridge repo on GitHub
-3. `workbench bootstrap` generates a prompt you paste into any AI chat
+1. `agentlock init` creates structured state files in your project
+2. `agentlock sync` pushes them to a central bridge repo on GitHub
+3. `agentlock bootstrap` generates a prompt you paste into any AI chat
 4. The AI reads your state files and has full context in under 60 seconds
 
 ## License

@@ -1,7 +1,22 @@
 {
   "permissions": {
     "allow": [
-      "Bash(powershell:*)"
+      "Bash(powershell:*)",
+      "Bash(find .:*)",
+      "Bash(npm install:*)",
+      "Bash(node:*)",
+      "Bash(npm publish:*)",
+      "Bash(npm pkg:*)",
+      "Bash(npm login:*)",
+      "Read(//c/Users/Steven/tmp/wb-test/**)",
+      "Bash(workbench --version)",
+      "Bash(where workbench:*)",
+      "Bash(\"C:/Users/Steven/AppData/Roaming/npm/workbench\":*)",
+      "Bash(\"C:/Users/Steven/AppData/Roaming/npm/workbench\" doctor:*)",
+      "Bash(\"C:/Users/Steven/AppData/Roaming/npm/workbench\" init:*)",
+      "Bash(\"C:/Users/Steven/AppData/Roaming/npm/workbench\" status:*)",
+      "Bash(\"C:/Users/Steven/AppData/Roaming/npm/workbench\" bootstrap:*)",
+      "Bash(\"C:/Users/Steven/AppData/Roaming/npm/workbench\" sync:*)"
     ]
   }
 }

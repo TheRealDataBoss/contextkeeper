@@ -1,10 +1,10 @@
 {
-  "name": "workbench-ai",
-  "version": "0.1.0",
-  "description": "Universal AI session continuity protocol and CLI",
+  "name": "agentlock",
+  "version": "0.2.0",
+  "description": "Zero model drift between AI agents. Universal session continuity protocol and CLI for Claude, GPT, Gemini, and any LLM.",
   "type": "module",
   "bin": {
-    "workbench": "./bin/workbench.js"
+    "agentlock": "bin/agentlock.js"
   },
   "keywords": [
     "ai",
@@ -20,7 +20,7 @@
   "author": "TheRealDataBoss",
   "repository": {
     "type": "git",
-    "url": "https://github.com/TheRealDataBoss/workbench.git"
+    "url": "git+https://github.com/TheRealDataBoss/workbench.git"
   },
   "engines": {
     "node": ">=18"
@@ -32,6 +32,7 @@
     "ajv": "^8.0.0",
     "ajv-formats": "^2.1.0",
     "simple-git": "^3.0.0",
-    "enquirer": "^2.3.6"
+    "@inquirer/prompts": "^7.0.0",
+    "clipboardy": "^4.0.0"
   }
 }

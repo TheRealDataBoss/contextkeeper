@@ -1,4 +1,4 @@
-"""workbench bootstrap — generate paste-ready AI bootstrap prompt."""
+"""agentlock bootstrap — generate paste-ready AI bootstrap prompt."""
 
 from __future__ import annotations
 
