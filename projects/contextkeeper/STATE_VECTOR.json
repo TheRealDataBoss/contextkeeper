@@ -12,7 +12,8 @@
     "pypi": "https://pypi.org/project/contextkeeper/0.2.7/",
     "mcp_registry": "https://registry.modelcontextprotocol.io",
     "npm": "https://www.npmjs.com/package/contextkeeper",
-    "github": "https://github.com/TheRealDataBoss/contextkeeper"
+    "github": "https://github.com/TheRealDataBoss/contextkeeper",
+    "landing_page": "https://therealdataboss.github.io/contextkeeper"
   },
   "tasks": {
     "TASK-0007": {"status": "DONE", "desc": "Bump npm to v0.2.1 + update README"},
@@ -26,7 +27,7 @@
     "TASK-0013": {"status": "DONE", "desc": "Build REST API (FastAPI)"},
     "TASK-0014": {"status": "DONE", "desc": "Write OpenAPI spec for GPT action"},
     "TASK-0015": {"status": "DONE", "desc": "Submit to MCP registry", "notes": "Published io.github.TheRealDataBoss/contextkeeper v0.2.7 to registry.modelcontextprotocol.io (PyPI package only, npm pending mcpName publish)"},
-    "TASK-0016": {"status": "PENDING", "desc": "Build contextkeeper.ai landing page"}
+    "TASK-0016": {"status": "DONE", "desc": "Build contextkeeper.ai landing page", "notes": "GitHub Pages at therealdataboss.github.io/contextkeeper"}
   },
   "decisions": {
     "name": "contextkeeper",
