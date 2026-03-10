@@ -3,8 +3,9 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
+# mcp-name: io.github.TheRealDataBoss/contextkeeper
 name = "contextkeeper"
-version = "0.2.4"
+version = "0.2.7"
 description = "Zero model drift between AI agents. Universal session continuity CLI and Python library for Claude, GPT, Gemini, and any LLM."
 readme = "README.md"
 license = "MIT"

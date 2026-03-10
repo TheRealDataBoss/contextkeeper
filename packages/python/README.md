@@ -1,6 +1,6 @@
 # contextkeeper
 
-<!-- mcp-name: io.github.therealdataboss/contextkeeper -->
+mcp-name: io.github.TheRealDataBoss/contextkeeper
 
 [![PyPI version](https://img.shields.io/pypi/v/contextkeeper?color=00e5ff&labelColor=0d1320)](https://pypi.org/project/contextkeeper/)
 [![Python](https://img.shields.io/pypi/pyversions/contextkeeper?color=00ffa3&labelColor=0d1320)](https://pypi.org/project/contextkeeper/)
