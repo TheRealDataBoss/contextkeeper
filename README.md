@@ -1,4 +1,4 @@
-# TheRealDataBoss/workbench
+# TheRealDataBoss/contextkeeper
 ## Universal AI Session Continuity Framework
 
 This repo is the persistent memory layer for all active projects owned by Steven Wazlavek (@theRealDataBoss). Any AI session reads this repo at the start and has full context. No chat history needed. No zip files. No manual re-explanation.
@@ -7,7 +7,7 @@ This repo is the persistent memory layer for all active projects owned by Steven
 
 Paste this into any new AI chat, replacing [project-name]:
 
-> "Read https://raw.githubusercontent.com/TheRealDataBoss/workbench/main/BOOTSTRAP.md and continue [project-name]"
+> "Read https://raw.githubusercontent.com/TheRealDataBoss/contextkeeper/main/BOOTSTRAP.md and continue [project-name]"
 
 The AI fetches PROFILE.md + projects/[project]/HANDOFF.md + projects/[project]/STATE_VECTOR.json and is fully loaded in under 60 seconds.
 
@@ -31,7 +31,7 @@ The AI fetches PROFILE.md + projects/[project]/HANDOFF.md + projects/[project]/S
 
 ## Raw Bootstrap URLs
 
-- BOOTSTRAP: https://raw.githubusercontent.com/TheRealDataBoss/workbench/main/BOOTSTRAP.md
-- PROFILE: https://raw.githubusercontent.com/TheRealDataBoss/workbench/main/PROFILE.md
-- 3dpie HANDOFF: https://raw.githubusercontent.com/TheRealDataBoss/workbench/main/projects/3dpie/HANDOFF.md
-- 3dpie STATE: https://raw.githubusercontent.com/TheRealDataBoss/workbench/main/projects/3dpie/STATE_VECTOR.json
+- BOOTSTRAP: https://raw.githubusercontent.com/TheRealDataBoss/contextkeeper/main/BOOTSTRAP.md
+- PROFILE: https://raw.githubusercontent.com/TheRealDataBoss/contextkeeper/main/PROFILE.md
+- 3dpie HANDOFF: https://raw.githubusercontent.com/TheRealDataBoss/contextkeeper/main/projects/3dpie/HANDOFF.md
+- 3dpie STATE: https://raw.githubusercontent.com/TheRealDataBoss/contextkeeper/main/projects/3dpie/STATE_VECTOR.json

@@ -4,12 +4,12 @@
 
 ### macOS / Linux
 ```sh
-curl -fsSL https://raw.githubusercontent.com/TheRealDataBoss/workbench/main/installer/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/TheRealDataBoss/contextkeeper/main/installer/install.sh | sh
 ```
 
 ### Windows (PowerShell)
 ```powershell
-irm https://raw.githubusercontent.com/TheRealDataBoss/workbench/main/installer/install.ps1 | iex
+irm https://raw.githubusercontent.com/TheRealDataBoss/contextkeeper/main/installer/install.ps1 | iex
 ```
 
 ## What the Installer Does

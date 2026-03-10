@@ -4,7 +4,7 @@ mcp-name: io.github.TheRealDataBoss/contextkeeper
 
 [![PyPI version](https://img.shields.io/pypi/v/contextkeeper?color=00e5ff&labelColor=0d1320)](https://pypi.org/project/contextkeeper/)
 [![Python](https://img.shields.io/pypi/pyversions/contextkeeper?color=00ffa3&labelColor=0d1320)](https://pypi.org/project/contextkeeper/)
-[![License](https://img.shields.io/pypi/l/contextkeeper?color=7b61ff&labelColor=0d1320)](https://github.com/TheRealDataBoss/workbench/blob/main/LICENSE)
+[![License](https://img.shields.io/pypi/l/contextkeeper?color=7b61ff&labelColor=0d1320)](https://github.com/TheRealDataBoss/contextkeeper/blob/main/LICENSE)
 [![npm](https://img.shields.io/npm/v/contextkeeper?color=ffb300&labelColor=0d1320)](https://www.npmjs.com/package/contextkeeper)
 
 > **Zero model drift between AI agents.**

@@ -5,7 +5,7 @@
   "title": "contextkeeper",
   "websiteUrl": "https://pypi.org/project/contextkeeper/",
   "repository": {
-    "url": "https://github.com/TheRealDataBoss/workbench",
+    "url": "https://github.com/TheRealDataBoss/contextkeeper",
     "source": "github",
     "subfolder": "packages/python"
   },

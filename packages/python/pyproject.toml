@@ -54,6 +54,6 @@ contextkeeper-mcp = "contextkeeper.mcp_server:main"
 contextkeeper-server = "contextkeeper.server:main"
 
 [project.urls]
-Homepage = "https://github.com/TheRealDataBoss/workbench"
-Repository = "https://github.com/TheRealDataBoss/workbench"
-Issues = "https://github.com/TheRealDataBoss/workbench/issues"
+Homepage = "https://github.com/TheRealDataBoss/contextkeeper"
+Repository = "https://github.com/TheRealDataBoss/contextkeeper"
+Issues = "https://github.com/TheRealDataBoss/contextkeeper/issues"

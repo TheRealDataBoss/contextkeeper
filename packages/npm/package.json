@@ -21,7 +21,7 @@
   "author": "TheRealDataBoss",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/TheRealDataBoss/workbench.git"
+    "url": "git+https://github.com/TheRealDataBoss/contextkeeper.git"
   },
   "engines": {
     "node": ">=18"

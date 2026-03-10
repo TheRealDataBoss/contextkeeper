@@ -6,11 +6,11 @@
     "version": "0.2.4",
     "contact": {
       "name": "TheRealDataBoss",
-      "url": "https://github.com/TheRealDataBoss/workbench"
+      "url": "https://github.com/TheRealDataBoss/contextkeeper"
     },
     "license": {
       "name": "MIT",
-      "url": "https://github.com/TheRealDataBoss/workbench/blob/main/LICENSE"
+      "url": "https://github.com/TheRealDataBoss/contextkeeper/blob/main/LICENSE"
     }
   },
   "servers": [

@@ -22,9 +22,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: TheRealDataBoss/workbench/github-action@main
+      - uses: TheRealDataBoss/contextkeeper/github-action@main
         with:
-          workbench_repo: 'TheRealDataBoss/workbench'
+          workbench_repo: 'TheRealDataBoss/contextkeeper'
           github_token: ${{ secrets.WORKBENCH_TOKEN }}
           project_name: 'my-project'
 ```
@@ -33,7 +33,7 @@ jobs:
 
 | Input | Required | Default | Description |
 |---|---|---|---|
-| `workbench_repo` | Yes | — | Your bridge repo (e.g. `TheRealDataBoss/workbench`) |
+| `workbench_repo` | Yes | — | Your bridge repo (e.g. `TheRealDataBoss/contextkeeper`) |
 | `github_token` | Yes | — | Token with write access to the bridge repo |
 | `project_name` | Yes | — | Project slug (directory name in bridge repo) |
 | `state_vector_path` | No | `handoff/STATE_VECTOR.json` | Path to STATE_VECTOR.json |

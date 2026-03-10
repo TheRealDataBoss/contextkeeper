@@ -8,7 +8,7 @@ Published on PyPI and npm. Zero model drift between AI agents — Claude, GPT, G
 ## Current State
 - PyPI: https://pypi.org/project/contextkeeper/0.2.1/ ✅ LIVE
 - npm: https://www.npmjs.com/package/contextkeeper ✅ LIVE (v0.2.0, needs 0.2.1 bump)
-- GitHub: https://github.com/TheRealDataBoss/workbench
+- GitHub: https://github.com/TheRealDataBoss/contextkeeper
 - Domain: contextkeeper.ai — PENDING REGISTRATION
 
 ## Completed

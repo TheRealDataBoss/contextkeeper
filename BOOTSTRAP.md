@@ -6,14 +6,14 @@ Any AI reading this file can resume any project with zero information loss acros
 
 ## Step 1 — Load Operator Profile
 Fetch and internalize:
-https://raw.githubusercontent.com/TheRealDataBoss/workbench/main/PROFILE.md
+https://raw.githubusercontent.com/TheRealDataBoss/contextkeeper/main/PROFILE.md
 
 This gives you: Steven's identity, machine, paths, response style, code standards, viz standards, modeling standards, communication rules.
 
 ## Step 2 — Load Project State
 Fetch both files for the requested project:
-- https://raw.githubusercontent.com/TheRealDataBoss/workbench/main/projects/[project-name]/HANDOFF.md
-- https://raw.githubusercontent.com/TheRealDataBoss/workbench/main/projects/[project-name]/STATE_VECTOR.json
+- https://raw.githubusercontent.com/TheRealDataBoss/contextkeeper/main/projects/[project-name]/HANDOFF.md
+- https://raw.githubusercontent.com/TheRealDataBoss/contextkeeper/main/projects/[project-name]/STATE_VECTOR.json
 
 ## Step 3 — Validate State
 Confirm you have read and understood:
@@ -48,18 +48,18 @@ Only proceed after Steven explicitly confirms. No implementation before operator
 
 For 3dpie:
 Fetch these URLs and bootstrap the 3dpie project:
-https://raw.githubusercontent.com/TheRealDataBoss/workbench/main/PROFILE.md
-https://raw.githubusercontent.com/TheRealDataBoss/workbench/main/projects/3dpie/HANDOFF.md
-https://raw.githubusercontent.com/TheRealDataBoss/workbench/main/projects/3dpie/STATE_VECTOR.json
+https://raw.githubusercontent.com/TheRealDataBoss/contextkeeper/main/PROFILE.md
+https://raw.githubusercontent.com/TheRealDataBoss/contextkeeper/main/projects/3dpie/HANDOFF.md
+https://raw.githubusercontent.com/TheRealDataBoss/contextkeeper/main/projects/3dpie/STATE_VECTOR.json
 
 For portfolio-django:
 Fetch these URLs and bootstrap the portfolio-django project:
-https://raw.githubusercontent.com/TheRealDataBoss/workbench/main/PROFILE.md
-https://raw.githubusercontent.com/TheRealDataBoss/workbench/main/projects/portfolio-django/HANDOFF.md
-https://raw.githubusercontent.com/TheRealDataBoss/workbench/main/projects/portfolio-django/STATE_VECTOR.json
+https://raw.githubusercontent.com/TheRealDataBoss/contextkeeper/main/PROFILE.md
+https://raw.githubusercontent.com/TheRealDataBoss/contextkeeper/main/projects/portfolio-django/HANDOFF.md
+https://raw.githubusercontent.com/TheRealDataBoss/contextkeeper/main/projects/portfolio-django/STATE_VECTOR.json
 
 For mit-modules:
 Fetch these URLs and bootstrap the mit-modules project:
-https://raw.githubusercontent.com/TheRealDataBoss/workbench/main/PROFILE.md
-https://raw.githubusercontent.com/TheRealDataBoss/workbench/main/projects/mit-modules/HANDOFF.md
-https://raw.githubusercontent.com/TheRealDataBoss/workbench/main/projects/mit-modules/STATE_VECTOR.json
+https://raw.githubusercontent.com/TheRealDataBoss/contextkeeper/main/PROFILE.md
+https://raw.githubusercontent.com/TheRealDataBoss/contextkeeper/main/projects/mit-modules/HANDOFF.md
+https://raw.githubusercontent.com/TheRealDataBoss/contextkeeper/main/projects/mit-modules/STATE_VECTOR.json
