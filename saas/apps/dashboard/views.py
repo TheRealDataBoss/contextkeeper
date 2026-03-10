@@ -27,13 +27,15 @@ def dashboard(request):
         profile.save(update_fields=["org"])
 
     projects = Project.objects.filter(org=profile.org)
-    total_sessions = Session.objects.filter(project__org=profile.org).count()
-    total_handoffs = Handoff.objects.filter(session__project__org=profile.org).count()
+    project_count = projects.count()
+    session_count = Session.objects.filter(project__org=profile.org).count()
+    handoff_count = Handoff.objects.filter(session__project__org=profile.org).count()
 
     return render(request, "dashboard/index.html", {
         "projects": projects,
-        "total_sessions": total_sessions,
-        "total_handoffs": total_handoffs,
+        "project_count": project_count,
+        "session_count": session_count,
+        "handoff_count": handoff_count,
         "profile": profile,
     })
 
