@@ -6,7 +6,7 @@
   "next_task": "TASK-0007",
   "packages": {
     "pypi": "0.2.2",
-    "npm": "0.2.0"
+    "npm": "0.2.1"
   },
   "urls": {
     "pypi": "https://pypi.org/project/contextkeeper/0.2.2/",
@@ -14,10 +14,10 @@
     "github": "https://github.com/TheRealDataBoss/workbench"
   },
   "tasks": {
-    "TASK-0007": {"status": "PENDING", "desc": "Bump npm to v0.2.1 + update README"},
+    "TASK-0007": {"status": "DONE", "desc": "Bump npm to v0.2.1 + update README"},
     "TASK-0008": {"status": "PENDING", "desc": "Fix pyproject.toml trove classifiers"},
     "TASK-0009": {"status": "PENDING", "desc": "Register contextkeeper.ai domain"},
-    "TASK-0010": {"status": "PENDING", "desc": "Smoke test all 5 CLI commands"},
+    "TASK-0010": {"status": "PARTIAL", "desc": "Smoke test all 5 CLI commands", "notes": "3/5 PASS (status, init, bootstrap). FAIL: doctor (not implemented in Python CLI), sync --dry-run (Unicode arrow crash on Windows cp1252)"},
     "TASK-0011": {"status": "DONE", "desc": "Expose Python library API"},
     "TASK-0012": {"status": "PENDING", "desc": "Build MCP server"},
     "TASK-0013": {"status": "PENDING", "desc": "Build REST API (FastAPI)"},
