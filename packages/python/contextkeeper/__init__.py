@@ -1,4 +1,44 @@
-from contextkeeper.api import bootstrap, sync, status, init, doctor
+"""contextkeeper — Zero model drift between AI agents."""
 
-__all__ = ["bootstrap", "sync", "status", "init", "doctor"]
-__version__ = "0.2.4"
+from contextkeeper.client import ContextKeeperClient
+from contextkeeper.exceptions import (
+    BackendError,
+    ContextKeeperError,
+    HandoffNotFoundError,
+    ProjectNotInitializedError,
+    SchemaVersionError,
+    SessionNotFoundError,
+)
+from contextkeeper.models import (
+    AgentType,
+    Decision,
+    Handoff,
+    HandoffDiff,
+    ProjectConfig,
+    Session,
+    Task,
+    TaskStatus,
+)
+
+__version__ = "0.3.0"
+
+__all__ = [
+    # Client
+    "ContextKeeperClient",
+    # Models
+    "AgentType",
+    "Decision",
+    "Handoff",
+    "HandoffDiff",
+    "ProjectConfig",
+    "Session",
+    "Task",
+    "TaskStatus",
+    # Exceptions
+    "BackendError",
+    "ContextKeeperError",
+    "HandoffNotFoundError",
+    "ProjectNotInitializedError",
+    "SchemaVersionError",
+    "SessionNotFoundError",
+]
