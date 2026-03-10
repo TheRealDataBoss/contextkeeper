@@ -1,16 +1,16 @@
 {
   "project": "contextkeeper",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "status": "ACTIVE",
-  "phase": "Phase 3 complete -- Phase 4 ready",
+  "phase": "Phase 4 complete -- Phase 5 ready",
   "last_published": "2026-03-10",
-  "next_task": "TASK-0018",
+  "next_task": "TASK-0019",
   "packages": {
-    "pypi": "0.5.0",
+    "pypi": "0.6.0",
     "npm": "0.2.1"
   },
   "urls": {
-    "pypi": "https://pypi.org/project/contextkeeper/0.5.0/",
+    "pypi": "https://pypi.org/project/contextkeeper/0.6.0/",
     "mcp_registry": "https://registry.modelcontextprotocol.io",
     "npm": "https://www.npmjs.com/package/contextkeeper",
     "github": "https://github.com/TheRealDataBoss/contextkeeper",
@@ -29,13 +29,15 @@
     "TASK-0014": {"status": "DONE", "desc": "Write OpenAPI spec for GPT action"},
     "TASK-0015": {"status": "DONE", "desc": "Submit to MCP registry", "notes": "Published io.github.TheRealDataBoss/contextkeeper v0.2.7 to registry.modelcontextprotocol.io (PyPI package only, npm pending mcpName publish)"},
     "TASK-0016": {"status": "DONE", "desc": "Build contextkeeper.ai landing page", "notes": "GitHub Pages at therealdataboss.github.io/contextkeeper"},
-    "TASK-0017": {"status": "DONE", "desc": "Phase 3: SDK depth + REST API rewrite + MCP rewrite + CLI subcommands + tests", "notes": "173 tests passing. client.py (10 new methods), server.py (16 endpoints), mcp_server.py (10 tools), cli.py (sessions/tasks/decisions subcommands + export/diff/serve)"}
+    "TASK-0017": {"status": "DONE", "desc": "Phase 3: SDK depth + REST API rewrite + MCP rewrite + CLI subcommands + tests", "notes": "173 tests passing"},
+    "TASK-0018": {"status": "DONE", "desc": "Phase 4: PostgresBackend, API key auth, audit log", "notes": "201 passed, 20 skipped (postgres). PostgresBackend with connection pooling, APIKeyManager, AuthMiddleware, 3 auth endpoints, audit logging. Published to PyPI 0.6.0"}
   },
   "decisions": {
     "name": "contextkeeper",
     "domain": "contextkeeper.ai",
     "cli_command": "contextkeeper",
     "distribution": ["pypi", "npm"],
-    "next_forms": ["python-library", "mcp-server", "rest-api", "gpt-action"]
+    "next_forms": ["python-library", "mcp-server", "rest-api", "gpt-action"],
+    "auth_model": "API key with SHA-256 hash, scope-based (read/write/admin)"
   }
 }
