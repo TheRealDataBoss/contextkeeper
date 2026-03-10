@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-import sys
 from pathlib import Path
 from typing import Optional
 
@@ -22,6 +21,14 @@ app = typer.Typer(
     no_args_is_help=True,
 )
 
+sessions_app = typer.Typer(help="Manage sessions.", no_args_is_help=True)
+tasks_app = typer.Typer(help="Manage tasks.", no_args_is_help=True)
+decisions_app = typer.Typer(help="Manage decisions.", no_args_is_help=True)
+
+app.add_typer(sessions_app, name="sessions")
+app.add_typer(tasks_app, name="tasks")
+app.add_typer(decisions_app, name="decisions")
+
 console = Console()
 err_console = Console(stderr=True)
 
@@ -35,20 +42,18 @@ def _handle_error(exc: Exception) -> None:
     raise typer.Exit(code=1)
 
 
+# ── top-level commands ──
+
+
 @app.command()
 def init(
     name: str = typer.Option(..., "--name", "-n", help="Project name"),
     coordination: str = typer.Option(
-        "sequential",
-        "--coordination",
-        "-c",
+        "sequential", "--coordination", "-c",
         help="Coordination mode: sequential, lock, or merge",
     ),
     backend: str = typer.Option(
-        "file",
-        "--backend",
-        "-b",
-        help="Backend: file or sqlite",
+        "file", "--backend", "-b", help="Backend: file or sqlite",
     ),
 ) -> None:
     """Initialize a new contextkeeper project in the current directory."""
@@ -69,7 +74,6 @@ def init(
 
 
 def _parse_task(raw: str) -> dict:
-    """Parse a task string in format 'TASK-XXXX:title' or 'TASK-XXXX:title:status'."""
     parts = raw.split(":", 2)
     if len(parts) < 2 or not parts[0].strip() or not parts[1].strip():
         err_console.print(
@@ -92,14 +96,12 @@ def sync(
     question: Optional[list[str]] = typer.Option(None, "--question", help="Add an open question (repeatable)"),
     task: Optional[list[str]] = typer.Option(None, "--task", help="Add a task as TASK-XXXX:title[:status] (repeatable)"),
 ) -> None:
-    """Sync current state — creates a versioned handoff."""
+    """Sync current state -- creates a versioned handoff."""
     try:
         tasks_parsed = [_parse_task(t) for t in (task or [])]
         client = _get_client()
         handoff = client.sync(
-            notes=notes,
-            agent=agent,
-            agent_version=agent_version,
+            notes=notes, agent=agent, agent_version=agent_version,
             next_steps=next_step or None,
             open_questions=question or None,
             tasks=tasks_parsed or None,
@@ -124,41 +126,33 @@ def bootstrap() -> None:
     """Generate a bootstrap briefing from the latest handoff."""
     try:
         client = _get_client()
-        output = client.bootstrap()
-        console.print(output)
+        console.print(client.bootstrap())
     except ContextKeeperError as exc:
         _handle_error(exc)
 
 
 @app.command()
 def status(
-    json_output: bool = typer.Option(False, "--json", help="Output raw JSON instead of rich table"),
+    json_output: bool = typer.Option(False, "--json", help="Output raw JSON"),
 ) -> None:
     """Show project status summary."""
     try:
         client = _get_client()
         result = client.status()
-
         if json_output:
             console.print(json.dumps(result, indent=2))
             return
-
         table = Table(title="contextkeeper status", border_style="cyan")
         table.add_column("Field", style="bold")
         table.add_column("Value")
-
         table.add_row("Project", f"{result['name']} ({result['project_id']})")
         table.add_row("Backend", result["backend"])
         table.add_row("Coordination", result["coordination"])
         table.add_row("Sessions", str(result["session_count"]))
         table.add_row("Latest Handoff", result["latest_handoff"])
-
         if result["task_counts"]:
-            counts = ", ".join(
-                f"{k}: {v}" for k, v in result["task_counts"].items()
-            )
+            counts = ", ".join(f"{k}: {v}" for k, v in result["task_counts"].items())
             table.add_row("Tasks", counts)
-
         console.print(table)
     except ContextKeeperError as exc:
         _handle_error(exc)
@@ -170,25 +164,20 @@ def doctor() -> None:
     try:
         client = _get_client()
         result = client.doctor()
-
         status_icons = {
             "ok": "[green]OK[/green]",
             "fail": "[red]FAIL[/red]",
             "warn": "[yellow]WARN[/yellow]",
             "info": "[cyan]INFO[/cyan]",
         }
-
         table = Table(title="contextkeeper doctor", border_style="cyan")
         table.add_column("Check", style="bold")
         table.add_column("Status")
         table.add_column("Detail")
-
         for check in result["checks"]:
             icon = status_icons.get(check["status"], "?")
             table.add_row(check["name"], icon, check["message"])
-
         console.print(table)
-
         if result["healthy"]:
             console.print("\n[green bold]All checks passed.[/green bold]")
         else:
@@ -216,6 +205,205 @@ def migrate(
             border_style="green",
         ))
     except ContextKeeperError as exc:
+        _handle_error(exc)
+
+
+@app.command(name="export")
+def export_cmd(
+    output: Optional[str] = typer.Option(None, "--output", "-o", help="Write briefing to file"),
+) -> None:
+    """Export bootstrap briefing to stdout or file."""
+    try:
+        client = _get_client()
+        out_path = Path(output) if output else None
+        briefing = client.export_briefing(output_path=out_path)
+        if out_path:
+            console.print(f"[green]Exported to {out_path}[/green]")
+        else:
+            console.print(briefing)
+    except ContextKeeperError as exc:
+        _handle_error(exc)
+
+
+@app.command(name="diff")
+def diff_cmd(
+    from_version: int = typer.Argument(..., help="Starting version"),
+    to_version: int = typer.Argument(..., help="Ending version"),
+) -> None:
+    """Show diff between two handoff versions."""
+    try:
+        client = _get_client()
+        d = client.diff(from_version, to_version)
+        table = Table(title=f"Diff v{d.from_version} -> v{d.to_version}", border_style="cyan")
+        table.add_column("Change", style="bold")
+        table.add_column("Detail")
+        if d.tasks_added:
+            for t in d.tasks_added:
+                table.add_row("[green]+ Task[/green]", f"{t.id}: {t.title}")
+        if d.tasks_removed:
+            for t in d.tasks_removed:
+                table.add_row("[red]- Task[/red]", f"{t.id}: {t.title}")
+        if d.tasks_changed:
+            for t in d.tasks_changed:
+                table.add_row("[yellow]~ Task[/yellow]", f"{t.id}: {t.title} [{t.status.value}]")
+        if d.decisions_added:
+            for dec in d.decisions_added:
+                table.add_row("[green]+ Decision[/green]", f"{dec.id}: {dec.summary}")
+        if d.questions_added:
+            for q in d.questions_added:
+                table.add_row("[green]+ Question[/green]", q)
+        if d.next_steps_changed:
+            for s in d.next_steps_changed:
+                table.add_row("[yellow]~ Step[/yellow]", s)
+        if not any([d.tasks_added, d.tasks_removed, d.tasks_changed,
+                     d.decisions_added, d.questions_added, d.next_steps_changed]):
+            table.add_row("(none)", "No changes detected")
+        console.print(table)
+    except ContextKeeperError as exc:
+        _handle_error(exc)
+
+
+@app.command()
+def serve(
+    host: str = typer.Option("0.0.0.0", "--host", help="Host to bind"),
+    port: int = typer.Option(8000, "--port", help="Port to bind"),
+) -> None:
+    """Start the REST API server."""
+    try:
+        import uvicorn
+        uvicorn.run("contextkeeper.server:app", host=host, port=port)
+    except ImportError:
+        err_console.print("[red]Error:[/red] uvicorn not installed. Run: pip install contextkeeper[server]")
+        raise typer.Exit(code=1)
+
+
+# ── sessions subcommands ──
+
+
+@sessions_app.command(name="list")
+def sessions_list() -> None:
+    """List all sessions."""
+    try:
+        client = _get_client()
+        sessions = client.list_sessions()
+        if not sessions:
+            console.print("No sessions found.")
+            return
+        table = Table(title="Sessions", border_style="cyan")
+        table.add_column("ID", style="bold")
+        table.add_column("Agent")
+        table.add_column("Created")
+        table.add_column("Status")
+        for s in sessions:
+            status_str = "open" if s.closed_at is None else f"closed {s.closed_at.isoformat()}"
+            table.add_row(
+                s.id[:12],
+                s.agent.value,
+                s.created_at.isoformat()[:19],
+                status_str,
+            )
+        console.print(table)
+    except ContextKeeperError as exc:
+        _handle_error(exc)
+
+
+@sessions_app.command(name="open")
+def sessions_open(
+    agent: str = typer.Option("custom", "--agent", help="Agent type"),
+    agent_version: str = typer.Option("", "--agent-version", help="Agent version"),
+) -> None:
+    """Open a new session."""
+    try:
+        client = _get_client()
+        session = client.open_session(agent=agent, agent_version=agent_version)
+        console.print(Panel(
+            f"[green]Session opened[/green]\n  ID: {session.id}\n  Agent: {session.agent.value}",
+            title="contextkeeper sessions open",
+            border_style="green",
+        ))
+    except ContextKeeperError as exc:
+        _handle_error(exc)
+
+
+@sessions_app.command(name="close")
+def sessions_close(
+    session_id: Optional[str] = typer.Argument(None, help="Session ID to close (default: current)"),
+) -> None:
+    """Close a session."""
+    try:
+        client = _get_client()
+        session = client.close_session(session_id)
+        console.print(f"[green]Closed session {session.id[:12]}[/green]")
+    except ContextKeeperError as exc:
+        _handle_error(exc)
+
+
+# ── tasks subcommands ──
+
+
+@tasks_app.command(name="add")
+def tasks_add(
+    task_id: str = typer.Argument(..., help="Task ID (e.g. TASK-0001)"),
+    title: str = typer.Argument(..., help="Task title"),
+    status_opt: str = typer.Option("pending", "--status", "-s", help="Task status"),
+    owner: str = typer.Option("human", "--owner", help="Task owner"),
+) -> None:
+    """Add or update a task."""
+    try:
+        client = _get_client()
+        handoff = client.add_task(task_id=task_id, title=title, status=status_opt, owner=owner)
+        console.print(Panel(
+            f"[green]Task {task_id} saved[/green]\n"
+            f"  Title:   {title}\n"
+            f"  Status:  {status_opt}\n"
+            f"  Handoff: v{handoff.version} ({len(handoff.tasks)} tasks)",
+            title="contextkeeper tasks add",
+            border_style="green",
+        ))
+    except (ContextKeeperError, ValueError) as exc:
+        _handle_error(exc)
+
+
+@tasks_app.command(name="update")
+def tasks_update(
+    task_id: str = typer.Argument(..., help="Task ID"),
+    status_val: str = typer.Argument(..., help="New status: pending, in_progress, done, blocked"),
+) -> None:
+    """Update task status."""
+    try:
+        client = _get_client()
+        handoff = client.update_task_status(task_id, status_val)
+        console.print(f"[green]Task {task_id} -> {status_val} (handoff v{handoff.version})[/green]")
+    except (ContextKeeperError, ValueError) as exc:
+        _handle_error(exc)
+
+
+# ── decisions subcommands ──
+
+
+@decisions_app.command(name="add")
+def decisions_add(
+    decision_id: str = typer.Argument(..., help="Decision ID (e.g. DEC-0001)"),
+    summary: str = typer.Argument(..., help="Decision summary"),
+    rationale: str = typer.Option("", "--rationale", "-r", help="Rationale"),
+    made_by: str = typer.Option("human", "--made-by", help="Who made the decision"),
+) -> None:
+    """Add a decision."""
+    try:
+        client = _get_client()
+        handoff = client.add_decision(
+            decision_id=decision_id, summary=summary,
+            rationale=rationale, made_by=made_by,
+        )
+        console.print(Panel(
+            f"[green]Decision {decision_id} recorded[/green]\n"
+            f"  Summary:   {summary}\n"
+            f"  Rationale: {rationale or '(none)'}\n"
+            f"  Handoff:   v{handoff.version} ({len(handoff.decisions)} decisions)",
+            title="contextkeeper decisions add",
+            border_style="green",
+        ))
+    except (ContextKeeperError, ValueError) as exc:
         _handle_error(exc)
 
 

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import logging
+from datetime import datetime, timezone
 from pathlib import Path
 
 from contextkeeper.backends.base import ContextKeeperBackend
@@ -13,6 +14,7 @@ from contextkeeper.backends.sqlite import SQLiteBackend
 from contextkeeper.exceptions import (
     BackendError,
     ContextKeeperError,
+    HandoffNotFoundError,
     ProjectNotInitializedError,
 )
 from contextkeeper.models import (
@@ -89,7 +91,6 @@ class ContextKeeperClient:
             coordination=coordination,
             backend=backend_type,
         )
-        # Switch to the requested backend type
         self._backend = _make_backend(backend_type, self._project_dir)
         self._lock_manager = LockManager(self._backend)
         self._backend.init_project(config)
@@ -138,7 +139,6 @@ class ContextKeeperClient:
                     "Wait for the lock to expire or use coordination='lock' for advisory mode."
                 )
         elif config.coordination in ("lock", "merge"):
-            # Advisory: warn via logger but don't block
             if self._lock_manager.is_locked(config.project_id):
                 lock = self._lock_manager.lock_info(config.project_id)
                 holder = lock["session_id"][:8] if lock else "unknown"
@@ -175,7 +175,6 @@ class ContextKeeperClient:
 
         self._backend.write_handoff(handoff)
 
-        # Release lock after write for sequential mode
         if config.coordination == "sequential":
             self._lock_manager.release(config.project_id, session.id)
 
@@ -242,7 +241,6 @@ class ContextKeeperClient:
         """Run health checks and return results."""
         checks: list[dict] = []
 
-        # Check 1: .contextkeeper exists
         ck_dir = self._project_dir / ".contextkeeper"
         if ck_dir.is_dir():
             checks.append({"name": ".contextkeeper directory", "status": "ok", "message": "Found"})
@@ -254,7 +252,6 @@ class ContextKeeperClient:
             })
             return {"healthy": False, "checks": checks}
 
-        # Check 2: config.json is valid
         try:
             config = self._backend.read_config()
             checks.append({
@@ -270,7 +267,6 @@ class ContextKeeperClient:
             })
             return {"healthy": False, "checks": checks}
 
-        # Check 3: backend type and path
         backend_name = config.backend
         if backend_name == "sqlite":
             db_path = ck_dir / "contextkeeper.db"
@@ -303,7 +299,6 @@ class ContextKeeperClient:
                     "message": "file (sessions dir missing -- will be created on first sync)",
                 })
 
-        # Check 4: latest handoff readable
         try:
             handoff = self._backend.read_latest_handoff(config.project_id)
             if handoff is not None:
@@ -325,7 +320,6 @@ class ContextKeeperClient:
                 "message": str(exc),
             })
 
-        # Check 5: lock status
         try:
             lock = self._backend.lock_info(config.project_id)
             if lock is not None:
@@ -353,10 +347,7 @@ class ContextKeeperClient:
     # ── switch_backend ──
 
     def switch_backend(self, target: str) -> dict:
-        """Migrate all data from current backend to target backend.
-
-        Returns a summary dict with counts of migrated sessions and handoffs.
-        """
+        """Migrate all data from current backend to target backend."""
         config = self._backend.read_config()
 
         if config.backend == target:
@@ -364,10 +355,8 @@ class ContextKeeperClient:
                 f"Already using '{target}' backend. Nothing to migrate."
             )
 
-        # Create the target backend
         target_backend = _make_backend(target, self._project_dir)
 
-        # Init target with updated config
         target_config = ProjectConfig(
             project_id=config.project_id,
             name=config.name,
@@ -378,12 +367,10 @@ class ContextKeeperClient:
         )
         target_backend.init_project(target_config)
 
-        # Migrate sessions
         sessions = self._backend.list_sessions(config.project_id)
         for session in sessions:
             target_backend.write_session(session)
 
-        # Migrate handoffs — iterate all sessions, all versions
         handoff_count = 0
         for session in sessions:
             version = 1
@@ -396,7 +383,6 @@ class ContextKeeperClient:
                 except Exception:
                     break
 
-        # Atomic switch: update config.json only after successful migration
         import os
         config_path = self._project_dir / ".contextkeeper" / "config.json"
         tmp = config_path.with_suffix(".tmp")
@@ -407,7 +393,6 @@ class ContextKeeperClient:
             tmp.unlink(missing_ok=True)
             raise ContextKeeperError("Migration completed but failed to update config.json")
 
-        # Switch the active backend
         self._backend = target_backend
         self._lock_manager = LockManager(self._backend)
 
@@ -417,6 +402,169 @@ class ContextKeeperClient:
             "sessions": len(sessions),
             "handoffs": handoff_count,
         }
+
+    # ── session management ──
+
+    def open_session(self, agent: str = "custom", agent_version: str = "") -> Session:
+        """Explicitly open a new session."""
+        config = self._backend.read_config()
+        session = Session(
+            project_id=config.project_id,
+            agent=AgentType(agent),
+        )
+        self._backend.write_session(session)
+        logger.info("Opened session %s", session.id)
+        return session
+
+    def close_session(self, session_id: str | None = None) -> Session:
+        """Close current or specified session. Sets closed_at timestamp."""
+        config = self._backend.read_config()
+        if session_id is None:
+            sessions = self._backend.list_sessions(config.project_id)
+            open_sessions = [s for s in sessions if s.closed_at is None]
+            if not open_sessions:
+                raise ContextKeeperError("No open sessions to close.")
+            session = open_sessions[-1]
+        else:
+            session = self._backend.read_session(session_id)
+
+        closed = Session(
+            id=session.id,
+            project_id=session.project_id,
+            created_at=session.created_at,
+            closed_at=datetime.now(timezone.utc),
+            agent=session.agent,
+            user_id=session.user_id,
+        )
+        self._backend.write_session(closed)
+        logger.info("Closed session %s", closed.id)
+        return closed
+
+    def get_session(self, session_id: str) -> Session:
+        """Return Session by ID."""
+        return self._backend.read_session(session_id)
+
+    def list_sessions(self) -> list[Session]:
+        """Return all sessions for project, newest first."""
+        config = self._backend.read_config()
+        sessions = self._backend.list_sessions(config.project_id)
+        return list(reversed(sessions))
+
+    # ── handoff access ──
+
+    def get_handoff(self, session_id: str, version: int) -> Handoff:
+        """Return specific handoff version."""
+        return self._backend.read_handoff(session_id, version=version)
+
+    def list_handoffs(self, session_id: str) -> list[Handoff]:
+        """Return all handoff versions for session, newest first."""
+        result: list[Handoff] = []
+        version = 1
+        while True:
+            try:
+                h = self._backend.read_handoff(session_id, version=version)
+                result.append(h)
+                version += 1
+            except Exception:
+                break
+        return list(reversed(result))
+
+    # ── task management ──
+
+    def _get_latest_handoff_or_raise(self) -> Handoff:
+        config = self._backend.read_config()
+        handoff = self._backend.read_latest_handoff(config.project_id)
+        if handoff is None:
+            raise HandoffNotFoundError("none", None)
+        return handoff
+
+    def _write_new_version(self, base: Handoff, **overrides) -> Handoff:
+        """Create a new handoff version based on an existing one."""
+        data = base.model_dump(mode="json")
+        data.pop("id", None)
+        data["version"] = base.version + 1
+        data["updated_at"] = datetime.now(timezone.utc).isoformat()
+        data.update(overrides)
+        new_handoff = Handoff.model_validate(data)
+        self._backend.write_handoff(new_handoff)
+        return new_handoff
+
+    def add_task(
+        self,
+        task_id: str,
+        title: str,
+        status: str = "pending",
+        owner: str = "human",
+        depends_on: list[str] | None = None,
+        notes: str = "",
+    ) -> Handoff:
+        """Add or update a task in the latest handoff. Creates new version."""
+        latest = self._get_latest_handoff_or_raise()
+        task = Task(
+            id=task_id,
+            title=title,
+            status=TaskStatus(status),
+            owner=owner,
+            depends_on=depends_on or [],
+            notes=notes,
+        )
+        tasks = [t for t in latest.tasks if t.id != task_id]
+        tasks.append(task)
+        return self._write_new_version(
+            latest, tasks=[t.model_dump(mode="json") for t in tasks],
+        )
+
+    def update_task_status(self, task_id: str, status: str) -> Handoff:
+        """Update status of existing task. Creates new handoff version."""
+        latest = self._get_latest_handoff_or_raise()
+        found = False
+        tasks = []
+        for t in latest.tasks:
+            if t.id == task_id:
+                found = True
+                updated = t.model_copy(update={"status": TaskStatus(status)})
+                tasks.append(updated)
+            else:
+                tasks.append(t)
+        if not found:
+            raise ValueError(f"Task '{task_id}' not found in latest handoff.")
+        return self._write_new_version(
+            latest, tasks=[t.model_dump(mode="json") for t in tasks],
+        )
+
+    # ── decision management ──
+
+    def add_decision(
+        self,
+        decision_id: str,
+        summary: str,
+        rationale: str = "",
+        made_by: str = "human",
+        supersedes: str | None = None,
+    ) -> Handoff:
+        """Add a decision to latest handoff. Creates new version."""
+        latest = self._get_latest_handoff_or_raise()
+        decision = Decision(
+            id=decision_id,
+            summary=summary,
+            rationale=rationale,
+            made_by=made_by,
+            supersedes=supersedes,
+        )
+        decisions = list(latest.decisions) + [decision]
+        return self._write_new_version(
+            latest, decisions=[d.model_dump(mode="json") for d in decisions],
+        )
+
+    # ── export ──
+
+    def export_briefing(self, output_path: Path | None = None) -> str:
+        """Render bootstrap briefing. Optionally write to file."""
+        briefing = self.bootstrap()
+        if output_path is not None:
+            output_path.write_text(briefing, encoding="utf-8")
+            logger.info("Exported briefing to %s", output_path)
+        return briefing
 
 
 def _slugify(name: str) -> str:
