@@ -44,14 +44,21 @@ def init(
         "-c",
         help="Coordination mode: sequential, lock, or merge",
     ),
+    backend: str = typer.Option(
+        "file",
+        "--backend",
+        "-b",
+        help="Backend: file or sqlite",
+    ),
 ) -> None:
     """Initialize a new contextkeeper project in the current directory."""
     try:
         client = _get_client()
-        config = client.init(name=name, coordination=coordination)
+        config = client.init(name=name, coordination=coordination, backend_type=backend)
         console.print(Panel(
             f"[green]Initialized project[/green] [bold]{config.name}[/bold]\n"
             f"  ID:           {config.project_id}\n"
+            f"  Backend:      {config.backend}\n"
             f"  Coordination: {config.coordination}\n"
             f"  Schema:       {config.schema_version}",
             title="contextkeeper init",
@@ -141,6 +148,7 @@ def status(
         table.add_column("Value")
 
         table.add_row("Project", f"{result['name']} ({result['project_id']})")
+        table.add_row("Backend", result["backend"])
         table.add_row("Coordination", result["coordination"])
         table.add_row("Sessions", str(result["session_count"]))
         table.add_row("Latest Handoff", result["latest_handoff"])
@@ -186,6 +194,27 @@ def doctor() -> None:
         else:
             console.print("\n[red bold]Some checks failed.[/red bold]")
             raise typer.Exit(code=1)
+    except ContextKeeperError as exc:
+        _handle_error(exc)
+
+
+@app.command()
+def migrate(
+    to: str = typer.Option(..., "--to", help="Target backend: file or sqlite"),
+) -> None:
+    """Migrate data from current backend to a different backend."""
+    try:
+        client = _get_client()
+        result = client.switch_backend(to)
+        console.print(Panel(
+            f"[green]Migration complete[/green]\n"
+            f"  From:     {result['from']}\n"
+            f"  To:       {result['to']}\n"
+            f"  Sessions: {result['sessions']}\n"
+            f"  Handoffs: {result['handoffs']}",
+            title="contextkeeper migrate",
+            border_style="green",
+        ))
     except ContextKeeperError as exc:
         _handle_error(exc)
 

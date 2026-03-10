@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import logging
 import os
+from datetime import datetime, timezone, timedelta
 from pathlib import Path
 
 from contextkeeper.exceptions import (
@@ -225,6 +226,88 @@ class FileBackend(ContextKeeperBackend):
             raise HandoffNotFoundError("unknown", to_version)
 
         return _compute_diff(from_handoff, to_handoff)
+
+    # ── lock operations ──
+
+    def _lock_path(self) -> Path:
+        return self._ck / "lock.json"
+
+    def acquire_lock(
+        self, project_id: str, session_id: str, agent: str, ttl_seconds: int,
+    ) -> bool:
+        self._ensure_init()
+        lock_path = self._lock_path()
+        now = datetime.now(timezone.utc)
+
+        # Check existing lock
+        if lock_path.exists():
+            try:
+                data = self._read_json(lock_path)
+                expires = datetime.fromisoformat(data["expires_at"])
+                if expires > now and data.get("session_id") != session_id:
+                    return False
+                # Expired or same session — overwrite
+            except (BackendError, KeyError, ValueError):
+                pass  # Corrupt lock file — overwrite
+
+        lock_data = {
+            "project_id": project_id,
+            "session_id": session_id,
+            "acquired_at": now.isoformat(),
+            "expires_at": (now + timedelta(seconds=ttl_seconds)).isoformat(),
+            "agent": agent,
+        }
+        self._atomic_write(lock_path, json.dumps(lock_data, indent=2))
+        return True
+
+    def release_lock(self, project_id: str, session_id: str) -> bool:
+        self._ensure_init()
+        lock_path = self._lock_path()
+        if not lock_path.exists():
+            return False
+        try:
+            data = self._read_json(lock_path)
+            if data.get("session_id") != session_id:
+                return False
+            lock_path.unlink()
+            return True
+        except BackendError:
+            return False
+
+    def is_locked(self, project_id: str) -> bool:
+        self._ensure_init()
+        lock_path = self._lock_path()
+        if not lock_path.exists():
+            return False
+        try:
+            data = self._read_json(lock_path)
+            expires = datetime.fromisoformat(data["expires_at"])
+            if expires <= datetime.now(timezone.utc):
+                lock_path.unlink(missing_ok=True)
+                return False
+            return True
+        except (BackendError, KeyError, ValueError):
+            return False
+
+    def lock_info(self, project_id: str) -> dict | None:
+        self._ensure_init()
+        lock_path = self._lock_path()
+        if not lock_path.exists():
+            return None
+        try:
+            data = self._read_json(lock_path)
+            expires = datetime.fromisoformat(data["expires_at"])
+            if expires <= datetime.now(timezone.utc):
+                lock_path.unlink(missing_ok=True)
+                return None
+            return {
+                "session_id": data["session_id"],
+                "agent": data["agent"],
+                "acquired_at": data["acquired_at"],
+                "expires_at": data["expires_at"],
+            }
+        except (BackendError, KeyError, ValueError):
+            return None
 
 
 def _compute_diff(old: Handoff, new: Handoff) -> HandoffDiff:

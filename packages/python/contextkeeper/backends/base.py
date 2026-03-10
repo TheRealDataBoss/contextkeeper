@@ -60,3 +60,23 @@ class ContextKeeperBackend(ABC):
     @abstractmethod
     def diff(self, project_id: str, from_version: int, to_version: int) -> HandoffDiff:
         """Compute the diff between two handoff versions."""
+
+    # ── lock operations ──
+
+    @abstractmethod
+    def acquire_lock(
+        self, project_id: str, session_id: str, agent: str, ttl_seconds: int,
+    ) -> bool:
+        """Try to acquire advisory lock. Returns True if acquired."""
+
+    @abstractmethod
+    def release_lock(self, project_id: str, session_id: str) -> bool:
+        """Release lock. Returns True if released, False if not owner."""
+
+    @abstractmethod
+    def is_locked(self, project_id: str) -> bool:
+        """Check if project has an active (unexpired) lock."""
+
+    @abstractmethod
+    def lock_info(self, project_id: str) -> dict | None:
+        """Return lock details or None if unlocked."""
