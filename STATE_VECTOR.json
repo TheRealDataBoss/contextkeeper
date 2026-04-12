@@ -1,11 +1,11 @@
 {
-  "lastUpdated": "2026-04-12T14:00:00",
-  "currentSprint": "Sprint 2 -- KaTeX + Streamdown Rendering",
-  "currentTask": "S2-01 -- Install Streamdown + KaTeX",
+  "lastUpdated": "2026-04-12T15:30:00",
+  "currentSprint": "Sprint 3 -- First-Run Experience",
+  "currentTask": "S3-01 -- useFirstRun hook and guided demo",
   "platform": {
     "agentNodes": 178,
     "templates": 8,
-    "lastCommit": "4a76e15",
+    "lastCommit": "342bbd6",
     "buildStatus": "PASSING",
     "typecheckStatus": "PASSING"
   },
@@ -15,17 +15,30 @@
       "sprint": "Sprint 1 -- Stability and Critical Bug Fixes",
       "completedAt": "2026-04-12",
       "tasks": [
-        "S1-01: Analytics chart useEffect deps fixed (agentRunLog?.id added to all 6 chart effects)",
-        "S1-02: Data Canvas nodes verified -- addNode correctly passes NODE_REGISTRY config",
-        "S1-03: Right panel SectionDefaultOpenContext value={hasNode} verified in place",
-        "S1-04: Auto-expand sections verified via hasNode context provider"
+        "S1-01: Analytics chart useEffect deps fixed",
+        "S1-02: Data Canvas nodes verified",
+        "S1-03: Right panel SectionDefaultOpenContext verified",
+        "S1-04: Auto-expand sections verified"
+      ]
+    },
+    {
+      "sprint": "Sprint 2 -- KaTeX + Markdown Rendering",
+      "completedAt": "2026-04-12",
+      "tasks": [
+        "S2-01: RenderedOutput component (marked + katex, Observatory CSS)",
+        "S2-02: KaTeX CSS loaded in main.tsx",
+        "S2-03: Results tab cards render markdown + math + code blocks",
+        "S2-04: Output Stream tab renders markdown for node outputs",
+        "S2-05: Right panel Output Preview renders markdown",
+        "S2-06: AI Actions result renders markdown",
+        "S2-07: Chat page assistant messages render markdown + math"
       ]
     }
   ],
   "nextActions": [
-    "Install streamdown and katex packages",
-    "Add KaTeX rendering to AI output panels",
-    "Add Streamdown (formatted markdown) to bottom panel Output Stream",
-    "Then begin Sprint 3: First-Run Experience"
+    "Build useFirstRun hook and welcome modal",
+    "Add guided demo pipeline for new users",
+    "Implement code splitting for large chunks",
+    "Then begin Sprint 4: Connectors 1-20"
   ]
 }
