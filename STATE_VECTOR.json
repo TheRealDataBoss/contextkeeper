@@ -1,44 +1,44 @@
 {
-  "lastUpdated": "2026-04-12T15:30:00",
-  "currentSprint": "Sprint 3 -- First-Run Experience",
-  "currentTask": "S3-01 -- useFirstRun hook and guided demo",
+  "lastUpdated": "2026-04-12T18:00:00",
+  "currentSprint": "Sprint 4 -- Connectors",
+  "currentTask": "S4-01 -- ConnectorBase architecture",
   "platform": {
     "agentNodes": 178,
     "templates": 8,
-    "lastCommit": "342bbd6",
+    "lastCommit": "e10e88b",
     "buildStatus": "PASSING",
-    "typecheckStatus": "PASSING"
+    "typecheckStatus": "PASSING",
+    "mainChunkKB": 1518,
+    "totalChunks": 19
   },
   "knownIssues": [],
   "completedSprints": [
     {
-      "sprint": "Sprint 1 -- Stability and Critical Bug Fixes",
-      "completedAt": "2026-04-12",
-      "tasks": [
-        "S1-01: Analytics chart useEffect deps fixed",
-        "S1-02: Data Canvas nodes verified",
-        "S1-03: Right panel SectionDefaultOpenContext verified",
-        "S1-04: Auto-expand sections verified"
-      ]
+      "sprint": "Sprint 1 -- Stability",
+      "completedAt": "2026-04-12"
     },
     {
-      "sprint": "Sprint 2 -- KaTeX + Markdown Rendering",
+      "sprint": "Sprint 2 -- KaTeX + Markdown",
+      "completedAt": "2026-04-12"
+    },
+    {
+      "sprint": "Sprint 3 -- First-Run + Housekeeping",
       "completedAt": "2026-04-12",
       "tasks": [
-        "S2-01: RenderedOutput component (marked + katex, Observatory CSS)",
-        "S2-02: KaTeX CSS loaded in main.tsx",
-        "S2-03: Results tab cards render markdown + math + code blocks",
-        "S2-04: Output Stream tab renders markdown for node outputs",
-        "S2-05: Right panel Output Preview renders markdown",
-        "S2-06: AI Actions result renders markdown",
-        "S2-07: Chat page assistant messages render markdown + math"
+        "S3-01: FirstRunOverlay with welcome screen and feature pills",
+        "S3-02: Code splitting -- 13.5MB monolith to 19 lazy-loaded chunks (1.5MB main)",
+        "S3-03: Analytics chart Plotly sections get explicit defaultHeight",
+        "S3-04: Section toggle fix (effectiveForceOpen transition-only)",
+        "S3-05: Section height auto-fit (defaultHeight=0 for non-chart sections)",
+        "S3-06: SectionDefaultOpenContext set to false (autoOpenOnData only)",
+        "S3-07: PANEL_RESET_KEY bumped to v4 (clears stale _open and _h keys)"
       ]
     }
   ],
   "nextActions": [
-    "Build useFirstRun hook and welcome modal",
-    "Add guided demo pipeline for new users",
-    "Implement code splitting for large chunks",
-    "Then begin Sprint 4: Connectors 1-20"
+    "Build ConnectorBase class and registry",
+    "Implement first 5 connectors (PostgreSQL, MySQL, SQLite, S3, REST API)",
+    "Wire connector nodes to backend routers",
+    "Then Sprint 5: Evaluation features"
   ]
 }
