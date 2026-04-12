@@ -1,25 +1,31 @@
 {
-  "lastUpdated": "2026-04-12T12:00:00",
-  "currentSprint": "Sprint 1 -- Stability and Critical Bug Fixes",
-  "currentTask": "S1-01 -- Fix Analytics charts",
+  "lastUpdated": "2026-04-12T14:00:00",
+  "currentSprint": "Sprint 2 -- KaTeX + Streamdown Rendering",
+  "currentTask": "S2-01 -- Install Streamdown + KaTeX",
   "platform": {
     "agentNodes": 178,
     "templates": 8,
-    "lastCommit": "32a7776",
+    "lastCommit": "4a76e15",
     "buildStatus": "PASSING",
     "typecheckStatus": "PASSING"
   },
-  "knownIssues": [
-    "S1-01: Analytics charts not rendering post-run",
-    "S1-02: Data Canvas dragged nodes render blank",
-    "S1-03: Right panel verification pass needed",
-    "S1-04: Auto-expand sections post-run needs verification"
+  "knownIssues": [],
+  "completedSprints": [
+    {
+      "sprint": "Sprint 1 -- Stability and Critical Bug Fixes",
+      "completedAt": "2026-04-12",
+      "tasks": [
+        "S1-01: Analytics chart useEffect deps fixed (agentRunLog?.id added to all 6 chart effects)",
+        "S1-02: Data Canvas nodes verified -- addNode correctly passes NODE_REGISTRY config",
+        "S1-03: Right panel SectionDefaultOpenContext value={hasNode} verified in place",
+        "S1-04: Auto-expand sections verified via hasNode context provider"
+      ]
+    }
   ],
-  "completedSprints": [],
   "nextActions": [
-    "Fix agentRunLog data chain for Analytics charts",
-    "Fix DataCanvasNode data shape mismatch",
-    "Verify right panel on both canvases",
-    "Then begin Sprint 2: KaTeX rendering"
+    "Install streamdown and katex packages",
+    "Add KaTeX rendering to AI output panels",
+    "Add Streamdown (formatted markdown) to bottom panel Output Stream",
+    "Then begin Sprint 3: First-Run Experience"
   ]
 }
