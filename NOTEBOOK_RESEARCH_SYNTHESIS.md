@@ -137,53 +137,71 @@ Hamilton is the only framework explicitly Pyodide-compatible, making it the prim
 
 ---
 
-## 5. Cell Type Master Inventory (78 Types Across 8 Tiers)
+## 5. Cell Type Master Inventory (200+ Implementations, 78 Types, 8 Tiers)
+
+*Updated April 2026 from 4-source master merge: cell-types-comprehensive.md, cell-types-inventory.md, cell-types-sql-widgets-extensibility.md, cell-types-platform-specializations.md. Total distinct cell implementations documented: 200+. Full details in research/cell-types-master.md.*
 
 ### Tier 1: Compute (8 types)
 
 **Code cells** (Python, R, Julia, Bash, JavaScript, SQL, Scala, Rust-via-WASM). Every platform supports Python code cells. Multi-language support varies: Jupyter supports any language with a kernel (100+ kernels exist), Databricks supports Python/R/SQL/Scala, Observable supports only JavaScript, Marimo supports only Python, Livebook supports only Elixir. ContextKeeper targets Python as primary with R, Julia, and JavaScript as secondary.
 
-**SQL cells** have 15 distinct implementations: Hex (DAG-integrated, output as DataFrame variable), Databricks (multi-warehouse, Unity Catalog), Deepnote (output panel with profiling), Datalore (schema browser), Observable (DatabaseClient with reactive bindings), Mode (query editor with parameter injection), Count (canvas-based query composition), Sigma (warehouse-native), Marimo (mo.sql with reactive output), SageMaker (Athena integration), Colab (BigQuery magic), Evidence (code-block SQL), dbt (ref-based SQL), Metabase (visual query builder), Redash (parameter widgets). ContextKeeper's SQL cell should combine Hex's DAG integration with Deepnote's output profiling and Count's visual composition.
+**SQL cells** have expanded to **25+ distinct implementations** across three categories. Notebook-native: Hex (DAG-integrated with automatic CTE chaining, green/purple pill dual-mode output, VegaFusion warehouse pushdown), Databricks (Unity Catalog, `_sqldf` implicit variable since DBR 13.3+, `:param` markers since DBR 15.2+), Deepnote (JinjaSQL with `DeepnoteQueryPreview` for chaining, reactive since 2024), Datalore (JetBrains DataGrip drivers, three-tab output with Table/Visualize/Statistics), Observable (DuckDBClient with Apache Arrow results, `sql` tagged template literal), Livebook (Smart Cell backed by `kino_db` with Postgrex/MyXQL/Exqlite/Tds/ADBC adapters, rasterizable to Elixir code), Zeppelin (interpreter prefix system with three templating mechanisms), Mode (Liquid templating, datasets list), Count (canvas DAG with dynamic CTE compilation), Sigma (warehouse-native, `sigma_element()` references), Colab Enterprise (native SQL cells with IAM auth to BigQuery), Noteable (ceased Dec 2023, JinjaSQL with backslash meta commands). BI tools: Metabase (three variable types including field filters generating WHERE clauses, MBQL->HoneySQL pipeline), Redash (Query Results Data Source enabling `SELECT * FROM query_49588` cross-chaining via in-memory SQLite), Apache Superset (full Jinja2 with async Celery dispatch, sqlglot-based Row Level Security). Modern data stack: dbt (`ref()` DAG, Jinja2, materializations, `adapter.dispatch()` for cross-database), SQLMesh (per-model `dialect:` with SQLGlot transpilation, no `ref()` needed -- auto-dependency detection), Malloy (semantic source/query model with symmetric aggregate handling), PRQL (three-stage compilation to SQL), Evidence.dev (SQL in Markdown fences, static site generation), Rill Developer (YAML+SQL with embedded DuckDB OLAP), Holistics AML (`{{ #model_name }}` references), LookML (Liquid templating with PDTs), Lightdash (dbt manifest.json conversion). Also: Querybook (Pinterest, Jinja2 with `{{ latest_partition() }}`), PopSQL (multiplayer SQL), Azure Data Studio (single-connection binding, GitHub issue #5031), DBeaver (multi-mode execution with `-- @result_name` comments), Dataiku (single-connection binding, `${variable_name}` DSS variables).
+
+ContextKeeper's SQL cell should combine Hex's DAG integration and CTE chaining with Deepnote's output profiling, Count's visual composition, and SQLMesh's per-cell dialect transpilation via SQLGlot.
 
 **WASM cells** execute compiled languages (Rust, C, C++) in the browser via WebAssembly. Emerging capability, not widely implemented. Starboard had early WASM support. ContextKeeper can leverage Pyodide's WASM foundation to enable WASM cell execution.
 
 ### Tier 2: Display (9 types)
 
-**Chart/visualization cells**: Plotly (interactive, 10M+ downloads/month), Vega-Lite (grammar of graphics, used by Observable and Altair), Observable Plot (D3 successor, declarative), Altair (Python Vega-Lite wrapper), Matplotlib (static, dominant in academia), Seaborn (statistical visualization). ContextKeeper should support Plotly as primary (interactive, wide format support) with Vega-Lite as secondary (declarative specification for AI generation).
+**Chart/visualization cells**: Plotly (interactive, 10M+ downloads/month, used by Databricks), Vega-Lite (grammar of graphics, used by Hex with VegaFusion server-side pre-aggregation, Deepnote, Count.co), Observable Plot (D3 successor, marks-based grammar with 20+ mark types), Altair (Python Vega-Lite wrapper), Matplotlib (static, dominant in academia), Seaborn (statistical visualization). BI tools add further variety: Metabase (custom React/SVG), Redash (Plotly.js + Leaflet), Superset (ECharts plugin architecture with legacy NVD3 and Deck.gl maps), Evidence.dev (ECharts with Svelte components), Rill (embedded DuckDB for sub-second latency). Key finding: Hex's chart cells return filtered DataFrames from visual selections, creating bidirectional data flow unique among notebook platforms. Marimo's `mo.ui.altair_chart()` and `mo.ui.plotly()` make charts simultaneously outputs AND reactive inputs. ContextKeeper should support Plotly as primary with Vega-Lite as secondary.
 
-**Map cells**: Folium (Leaflet.js wrapper), Kepler.gl (Uber, large-scale geospatial), Deck.gl (WebGL-powered), Mapbox, Observable's built-in map support. Geospatial visualization is important for data science but no notebook has dedicated map cell types -- maps are always rendered through code cells.
+**Map cells**: Folium (Leaflet.js wrapper, static), Kepler.gl (Uber, GPU-accelerated millions of points), Deck.gl/pydeck (WebGL-powered with bidirectional communication), Mapbox, ipyleaflet (bidirectional sync with 10+ layer types), Observable's D3-geo/Plot.geo. Livebook MapLibre Smart Cell is the only true "map cell type" with a dedicated UI generating valid code (`Ml.new(center:)` -> `Ml.add_source()` -> `Ml.add_layer()`). Hex has a dedicated Map cell with point/text/area/heatmap layers. Evidence has `<USMap>` and `<PointMap>` components.
 
-**Metric/KPI cells**: Hex has metric tiles, Evidence has `<Value>` components, Sigma has KPI cards. Dedicated metric cells that display a single number with trend/sparkline are common in BI tools but absent from data science notebooks.
+**Metric/KPI cells**: Hex Single Value cell (aggregation, comparison mode, sparkline, outputs Python variable), Deepnote Big Number block, Count Big Number visual, Evidence `<BigValue>` component, Mode Visual Explorer KPIs, Sigma KPI cards. Dedicated metric cells are common in BI tools but absent from data science notebooks.
 
-**Image, Video, Audio cells**: Standard display types. Jupyter's `IPython.display` module handles all three. Observable has `FileAttachment` for media. No notebook provides native annotation or editing for media cells.
+**Image, Video, Audio cells**: Standard display types. Jupyter's `IPython.display` module handles all three. Observable has `FileAttachment` for media. Livebook `Kino.Input.audio()` and `Kino.Input.image()` support recording via mic/camera natively, with `Kino.Image.new(binary, :pixel)` accepting `Nx.Tensor`. Gradio `gr.Audio(sources=["microphone"], streaming=True)` and `gradio-webrtc` for ultra-low-latency. No traditional notebook platform has native recording cells.
 
-**LaTeX/Math cells**: Jupyter uses MathJax, Observable uses KaTeX, Quarto supports both. LaTeX rendering is table stakes.
+**LaTeX/Math cells**: Jupyter uses MathJax, Observable uses KaTeX, Quarto supports both. ContextKeeper has a dedicated `latex` cell type with KaTeX. CoCalc provides the most complete LaTeX integration with full compilation, live preview, and error highlighting.
 
-**Mermaid/Diagram cells**: Mermaid.js for flowcharts, sequence diagrams, Gantt charts. Deepnote supports Mermaid blocks. Observable supports custom diagram renderers. Growing adoption for documentation cells.
+**Mermaid/Diagram cells**: Livebook kino_kroki Smart Cell supports 30+ diagram syntaxes (Graphviz, PlantUML, Mermaid, D2, BPMN, C4, DBML, Excalidraw, WaveDrom, WireViz, and more) via Kroki API -- rasterizable to code. ContextKeeper has a dedicated `mermaid` cell type. Observable has first-class `mermaid` and `dot` tagged template literals. JupyterLab 4.1+ renders Mermaid natively via `text/vnd.mermaid` MIME type. d2-widget provides `%%d2` magic. jupyterlab-drawio embeds full draw.io editor. **No platform gives diagrams an interactive cell type with visual editing.**
 
-### Tier 3: Input/Widget (40+ types across platforms)
+### Tier 3: Input/Widget (40+ types, 7 reactivity paradigms)
 
-**Interactive widgets** span 7 major implementations: ipywidgets (Jupyter standard, 100+ widget types), Marimo (reactive UI elements: `mo.ui.slider`, `mo.ui.dropdown`, etc.), Observable (Inputs library: `Inputs.range`, `Inputs.select`, etc.), Pluto.jl (Bond.jl widgets), Livebook (Kino library), Streamlit (st.slider, st.selectbox, etc.), Gradio (interface builder for ML models), Panel (HoloViz, flexible dashboarding).
+**Seven distinct reactivity paradigms** exist, each with different tradeoffs for a cell registry:
 
-Core widget types appearing across most implementations: slider (continuous/discrete), dropdown/select (single/multi), date picker, text input (single line/multi line), button (action trigger), file upload, color picker, toggle/checkbox, range slider (min/max pair), radio buttons, number input (with step), table input (editable DataFrames).
+1. **One-way variable binding with DAG propagation** (Hex): 14+ input types, each produces a named pill. Static analysis infers dependencies. Run Button gates downstream execution. URL parameterization in published apps.
+2. **Two-way reactive binding** (Marimo): 25+ `mo.ui` elements with generic `UIElement<S, T>` type system. `UIElementRegistry` tracks objects by `object_id`. Lens mechanism for hierarchical widgets. anywidget integration via `MarimoComm`.
+3. **Generator-based reactive binding** (Observable): `viewof` protocol creates dual variables (DOM element + value). `Generators.input()` async generator. Any DOM element with `.value` and `input` events is compatible. Entirely client-side.
+4. **Bond-based binding** (Pluto.jl): `@bind` with `AbstractPlutoDingetjes.jl` providing `initial_value`, `validate_value`, `transform_value`. WebSocket `bond_value` messages. One definition per variable enforced.
+5. **Pull-based model** (Livebook Kino): `Kino.Input.read/1` reads on demand. Shared inputs (all users see changes) vs. per-user controls. Staleness detection via input hashes in `cell_snapshot`.
+6. **Symmetric two-way binding via comm protocol** (ipywidgets): 40+ types. JSON over ZMQ/WebSockets. Delta compression with `hold_sync()`. `sync=True` traitlets. MIME type `application/vnd.jupyter.widget-view+json`. Foundation for ipyleaflet, bqplot, ipyvolume, ipydatagrid, k3d, ipysheet, nglview, ipycytoscape, pythreejs.
+7. **Complete script re-execution** (Streamlit): Protocol Buffers (BackMsg/ForwardMsg). `st.form` gates reruns. Fragments enable partial re-execution.
 
-Marimo's approach is recommended: widgets are reactive variables that trigger re-execution of dependent cells on change. This contrasts with ipywidgets' callback-based model which requires explicit event handlers.
+Additional paradigms: Gradio event-driven callbacks with concurrency control, Panel param-based reactivity with Bokeh PATCH-DOC messages, Shiny for Python implicit dependency tracking with three-tier reactive system (sources/conductors/endpoints). Google Colab form cells use `# @param` comment annotations with static options only (no dynamic population).
+
+Marimo's approach is recommended for ContextKeeper: widgets are reactive variables that trigger re-execution of dependent cells on change, with the richest widget library (25+ types including data_explorer, altair_chart with selection, microphone, chat interface).
 
 ### Tier 4: Data (6 types)
 
-**Table/DataFrame cells**: The most complex cell type. Implementations: Jupyter's `pandas.DataFrame.to_html()` (basic), Positron's Data Explorer (sparkline histograms, millions of rows, Convert to Code), Hex's DataFrameRenderer (virtual scrolling, column statistics), Deepnote's table view (column profiling, null counts, type badges), Observable's `Inputs.table` (sortable, searchable), Glide Data Grid (React component, 1M+ rows, used by Streamlit). ContextKeeper should adopt the Glide Data Grid pattern with Positron-style profiling.
+**Table/DataFrame cells**: The most complex cell type. Implementations: Jupyter's `pandas.DataFrame.to_html()` (basic), Positron's Data Explorer (sparkline histograms, millions of rows, Convert to Code), Hex's DataFrameRenderer (virtual scrolling, column statistics), Deepnote's table view (column profiling, null counts, type badges), Observable's `Inputs.table` (sortable, searchable), Glide Data Grid (React component, 1M+ rows, used by Streamlit). **Spreadsheet cells**: Mito (`mitosheet.sheet(df)`) auto-generates pandas code from edits (Handsontable-based), ipysheet for bidirectional widget linking, Streamlit `st.data_editor` returns modified DataFrames, Sigma operates as spreadsheet-over-SQL with LLM functions callable in cells. ContextKeeper should adopt the Glide Data Grid pattern with Positron-style profiling.
 
-**Profile cells**: Automated data profiling -- column statistics, distributions, correlations, missing values. pandas-profiling (now ydata-profiling), Sweetviz, D-Tale, Lux. No notebook has a dedicated profile cell type; profiling is always via library calls in code cells.
+**Profile cells**: Automated data profiling -- column statistics, distributions, correlations, missing values. ydata-profiling (via `to_widgets()` ipywidgets or `to_notebook_iframe()`), D-Tale (`dtale.show(df)` launches Flask server), Lux (auto-generated visualizations augmenting pandas). Databricks "Data Profile" tab computed on-demand via Spark. No notebook has a dedicated profile cell type; profiling is always via library calls or output tabs.
 
-**Schema cells**: Display and enforce data schemas. Great Expectations (schema validation), Pandera (pandas schema enforcement), dlt (auto-inferred schemas). A dedicated schema cell that validates DataFrames against contracts is novel.
+**Schema cells**: Display and enforce data schemas. Great Expectations (schema validation), Pandera (pandas schema enforcement), dlt (auto-inferred schemas). Hex and Deepnote both provide sidebar schema browsers with tree navigation, search, and table preview (Hex integrates dbt metadata including execution dates, source freshness, test status; both cache 7 days). A dedicated schema cell that validates DataFrames against contracts is novel.
 
 **Validation cells**: Run data quality checks. Great Expectations, Soda, dbt tests. Similar to schema cells but focused on business rules rather than structural contracts.
 
-**Writeback cells**: Write results back to databases/warehouses. Hex has writeback, Sigma has writeback, Deepnote has limited writeback. Important for closing the data loop but underrepresented in notebooks.
+**Writeback cells**: Hex has a dedicated Writeback cell type (select DataFrame, target table, write mode, execution modes: manual/session/app/scheduled). Sigma has writeback via Input Tables (not raw SQL DML). **No other notebook has a dedicated write-back cell type** -- all others require manual SQL DDL/DML or Python connector code.
 
-### Tier 5: AI (5 types)
+### Tier 5: AI (5 types, expanded with new findings)
 
-**Prompt/LLM cells**: 7 implementations identified. GitHub Copilot Chat (inline code generation), Hex Magic (SQL/Python generation from natural language), Deepnote AI (code generation and explanation), Colab AI (PaLM-powered), Databricks Assistant (workspace-aware AI), JupyterAI (multi-provider chat), Amazon Q (AWS-integrated). All are side-panel or inline assistants, not dedicated cell types.
+**Prompt/LLM cells**: Only one platform has a true first-class AI cell type: Google Colab (launched November 2025, Gemini-powered, but NOT context-aware and NOT executable -- output must be copied to code cells). The `google.colab.ai` Python API provides programmatic access with streaming. ContextKeeper has a dedicated `prompt` cell type with per-cell model selector (5 Groq models), target language selector, voice input, and conversation mode. Jupyter AI `%%ai` magic provides the most flexible LLM integration with variable interpolation (`{variable_name}`, `{In[11]}`, `{Out[11]}`, `{Err[3]}`), format flags, and chain registration -- but is not a distinct cell type. Databricks `ai_query()` SQL function is the most production-ready: returns proper SQL column values enabling batch inference at scale with task-specific functions (`ai_extract`, `ai_classify`, `ai_translate`, `ai_summarize`, `ai_similarity`, `ai_parse_document`).
+
+AI-augmented cell generation (not dedicated cell types): Hex Magic (full DAG + schema context via "Context Studio"), Databricks Assistant/Genie Code (three modes: Chat/Edit/Agent, slash commands, DatabricksIQ with Unity Catalog metadata), Deepnote Auto AI (autonomous generation with guardrails), Microsoft Fabric Copilot (MCP server tools, approval workflow requiring consent before execution), Marimo AI (three sidebar modes including Agent mode that edits/runs cells, `@variable` syntax for live data injection, `mo.ui.chat()` with reactive `chat.value`).
+
+LLM orchestration tools with prompt node patterns: LangChain LCEL (Runnable with pipe composition), LangGraph (StateGraph with typed state and checkpointing), Vellum.ai (typed nodes, five tool types including MCP Server), Rivet (visual graph IDE with typed ports), CrewAI (role-based multi-agent), AutoGen (ConversableAgent, v0.4 actor model), n8n (hierarchical LangChain JS with `$fromAI()`), Dust.tt (sequential blocks with shared state). **Key gap: no notebook platform offers built-in prompt versioning or A/B testing.** W&B Weave, Humanloop, PromptLayer, and Langfuse provide prompt versioning as separate tools.
+
+**Key gap across all platforms:** No existing prompt/LLM cell type has full DAG participation where the LLM's output is automatically typed, assigned to a variable, and available to downstream cells without manual intervention. This is the opportunity for ContextKeeper's agent cell design.
 
 **Agent pipeline cells**: LangGraph (graph-based agent workflows), AutoGen (multi-agent conversations), CrewAI (role-based agents). None are notebook cell types -- they are standalone frameworks. ContextKeeper's Agent Cell as DAG node is CONFIRMED NOVEL.
 
@@ -205,7 +223,7 @@ Marimo's approach is recommended: widgets are reactive variables that trigger re
 
 **Merge cells**: Combine results from multiple branches. No prior art in notebooks. Git merge is the conceptual model.
 
-**Approval/Gate cells**: Human-in-the-loop approval before pipeline continues. Airflow has manual approval tasks. In notebooks, this is NOVEL -- no platform has a cell that pauses execution pending human approval.
+**Approval/Gate cells**: Human-in-the-loop approval before pipeline continues. Closest equivalents: Livebook `Kino.interrupt!/2` (pauses evaluation, displays "Continue" button), Prefect `pause_flow_run`/`suspend_flow_run` (with `wait_for_input` accepting Pydantic BaseModel for form rendering), n8n Wait Nodes (resume on duration/webhook/form with approval URL), Marimo `mo.stop(condition, output)` (halts reactive propagation). Airflow has 13 trigger rules but no native human gate. In notebooks, this remains NOVEL -- no platform has a dedicated approval cell type.
 
 ### Tier 7: Agent (4 types)
 
@@ -223,15 +241,37 @@ Marimo's approach is recommended: widgets are reactive variables that trigger re
 
 **Diff cells**: Visual diff of cell outputs across versions/branches. nbdime for notebook diffs, ReviewNB for GitHub PR notebook diffs. A dedicated diff cell type is novel.
 
-**Test cells**: Dedicated test execution cells. nbdev uses notebook cells as tests. pytest-notebook runs tests. A dedicated cell type with test frameworks is partially implemented across tools.
+**Test cells**: Dedicated test execution cells. nbval (pytest plugin, cell markers: `# NBVAL_CHECK_OUTPUT`, `# NBVAL_SKIP`, etc.), testbook (external test files with `@testbook` decorator and `tb.ref()` callable proxy), nbmake (top-to-bottom execution), nbgrader (structured taxonomy: Autograder Tests with point values, Autograded Answer with solution stubs, hidden test sections). ContextKeeper has a dedicated `test` cell type with pass/fail badge rendering.
 
 **Benchmark cells**: Performance measurement cells. `%%timeit` magic in Jupyter. A dedicated cell type with statistical benchmarking (multiple runs, confidence intervals) is novel.
 
 **Export cells**: Export pipeline to production format. Ploomber exports to Airflow/Kubernetes. A dedicated cell type for export configuration is novel.
 
-**Connection cells**: Database/API connection configuration. Livebook's Smart Cells for connections. Hex has connection tiles. A dedicated cell type with connection pooling and health monitoring is partially implemented.
+**Connection cells**: Database/API connection configuration. Livebook's Smart Cells for connections (Postgrex, MyXQL, Exqlite, Tds, ADBC adapters with rasterizable generated code). Hex has connection tiles. A dedicated cell type with connection pooling and health monitoring is partially implemented.
 
-**Environment/Config cells**: Runtime configuration (Python version, packages, environment variables). Livebook's setup cells. A dedicated config cell type with validation is partially implemented.
+**Environment/Config cells**: Runtime configuration (Python version, packages, environment variables). Livebook's Setup Cell uses `Mix.install/2` with global caching and Hex.pm search UI. Marimo embeds PEP 723 inline script metadata, auto-installed via uv in isolated sandboxes. A dedicated config cell type with validation is partially implemented.
+
+**Scratch/Draft cells**: ContextKeeper has a dedicated `scratch` cell type (dashed border, excluded from Run All). Marimo has scratchpad cells -- ephemeral execution cells that don't persist. Unique debugging primitive.
+
+### Extensibility Registry Findings (New from Master Merge)
+
+Four platforms support true cell-type extensibility -- plus several additional models discovered:
+
+1. **Livebook Smart Cells** (gold standard): `Kino.SmartCell` behaviour with 5 required + 3 optional callbacks. Rasterization model is the architectural breakthrough -- cells degrade gracefully to plain code. 30+ community smart cells on Hex.pm.
+2. **ComfyUI NODE_CLASS_MAPPINGS** (most mature registry): `INPUT_TYPES`/`RETURN_TYPES`/`FUNCTION`/`CATEGORY` protocol. 4,000-10,000+ unique node types. V3 API adds async and type-safe IO classes. ComfyUI Manager indexes 2,000+ packages.
+3. **Zeppelin interpreters** (original cell-type-as-plugin): 20+ built-in, extensible via Java `Interpreter` class with interpreter-setting.json registration.
+4. **Starboard** (browser-based, dormant): Plugin cell types via `runtime.controls.registerPlugin()`.
+5. **n8n custom nodes**: `INodeType` interface with declarative and programmatic styles. npm packaging.
+6. **Node-RED**: Two-file registration (JS runtime + HTML editor). npm packages.
+7. **Apache NiFi**: `AbstractProcessor` with `PropertyDescriptor`/`Relationship`. NAR archive packaging.
+8. **Streamlit custom components**: iframe isolation with `declare_component()`. pip packages.
+9. **Gradio custom components**: `gradio cc` CLI with Svelte frontend. preprocess/postprocess pattern.
+10. **Panel ReactiveHTML**: No-build components via `_template` + `_scripts` with bidirectional param sync.
+11. **nteract 2.0**: MCP server with 27 tools for AI agent notebook manipulation via Automerge CRDT.
+
+**Jupyter's fixed three-type schema** (code, markdown, raw in nbformat v4.5) blocks the entire ecosystem. Issues #1937 and #4801 remain unresolved. JupyterLab extensions can add MIME renderers via `IRenderMimeRegistry` but cannot add new cell kinds.
+
+Five architectural patterns for a universal cell registry: (1) Rasterization (Livebook -- cells degrade to code), (2) Typed-port graph (ComfyUI -- declarative I/O schemas), (3) Reactive variable binding (Marimo/Observable -- DAG from variable references), (4) MIME-based extension (JupyterLab -- backward-compatible output renderers), (5) Iframe isolation (Streamlit/Retool -- secure third-party sandboxing). **No platform combines all five.** The recommended foundation for ContextKeeper: ComfyUI's typed I/O declarations + Livebook's rasterization + SQLMesh's per-model dialect transpilation via SQLGlot.
 
 ---
 
