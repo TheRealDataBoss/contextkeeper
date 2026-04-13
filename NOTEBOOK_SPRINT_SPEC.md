@@ -81,6 +81,75 @@ Move the 8 cell components + types into a shared package consumable by both data
 
 **Verification gate:** `pnpm build:packages` succeeds. Both `apps/data-canvas/` and `apps/notebook/` import `@ck/cells` and render cells.
 
+### 0.2b Cell Registry Architecture
+
+The cell registry is the backbone enabling a scalable, extensible cell type system. It defines how cell types are discovered, loaded, validated, and rendered. Three architectural patterns from three different domains are combined.
+
+**Registry interface (ComfyUI NODE_CLASS_MAPPINGS pattern):**
+
+Each cell type exports a registration object conforming to this interface:
+
+```typescript
+interface CellRegistration {
+  type: string;                          // unique identifier, e.g., "sql", "kpi", "agent"
+  label: string;                         // display name, e.g., "SQL Query", "KPI Card"
+  category: CellCategory;               // one of 11 categories (see below)
+  icon: string;                          // icon identifier (bi-* or custom SVG)
+  inputs: TypedPort[];                   // declared input types for DAG validation
+  outputs: TypedPort[];                  // declared output types for DAG validation
+  component: React.LazyExoticComponent<React.ComponentType<CellProps>>;
+}
+
+interface TypedPort {
+  name: string;                          // e.g., "dataframe", "query", "text"
+  type: PortType;                        // e.g., "DataFrame", "string", "number", "any"
+  optional?: boolean;
+}
+```
+
+**Target file:** `packages/@ck/cells/src/registry/cell-registry.ts`
+
+**Lazy loading:** Cell components are loaded via dynamic `import()` on first use, not bundled at startup. The registry stores `React.lazy(() => import('./components/SqlCell'))` references. This keeps the initial bundle small as the cell type count grows. Only the cell types actually used in a notebook are loaded into memory.
+
+**Category system (11 categories):**
+
+| Category | Description | Example Types |
+|----------|-------------|---------------|
+| SQL | Database query and write operations | sql, writeback |
+| LLM/Prompt | AI model interaction | prompt, agent |
+| Visualization | Charts, maps, diagrams | chart, map, mermaid |
+| Input/Widget | Interactive user inputs | form-slider, form-dropdown, form-text |
+| Smart/Extensible | Plugin-provided or auto-generated cells | (future plugin cells) |
+| Pipeline/Workflow | Execution flow control | branch, merge, router, tournament |
+| Display | Formatted output rendering | markdown, html, latex, kpi, image |
+| Data | Data inspection and manipulation | table, profile, filter, pivot |
+| Agent | Autonomous AI agents | agent (Phase 8) |
+| Meta/Infrastructure | Notebook infrastructure | deploy, webhook, cache, approval |
+| Novel | ContextKeeper-exclusive innovations | comparison, live |
+
+**Scale targets:**
+- Launch: 33 cell types across 11 categories
+- 12 months post-launch: 200+ types (including community contributions)
+- Long-term with plugin ecosystem: 10,000+ types (ComfyUI has 20K+ custom nodes as precedent)
+
+**Three architectural patterns adopted:**
+
+1. **Rasterization (Livebook Smart Cell pattern):** Every cell type -- no matter how visual or interactive -- must degrade to plain executable code for export. A KPI cell rasterizes to Python that computes and prints the metric. A filter cell rasterizes to pandas/SQL that applies the filter. This guarantees that any ContextKeeper notebook can be exported as a standard .py file and run without ContextKeeper installed.
+
+2. **Typed-port graph (ComfyUI pattern):** Each cell declares its input and output types via `TypedPort[]`. The DAG validation engine uses these declarations to prevent invalid connections (e.g., a chart cell cannot receive a string where it expects a DataFrame). Type mismatches are shown as red connection indicators in the DAG view (Phase 6). This enables auto-suggestions for compatible upstream cells.
+
+3. **Reactive variable binding (Marimo pattern):** Cells declare dependencies through variable references in their source code. The Phase 2 AST extractor identifies `defines` and `references` per cell, building the reactive dependency graph. Combined with typed ports, this creates a dual validation system -- structural (port types) and semantic (variable references).
+
+**Target files:**
+
+| File | Purpose | Est. Lines |
+|------|---------|-----------|
+| `packages/@ck/cells/src/registry/cell-registry.ts` | Registry singleton with register/get/list/getByCategory methods | 120 |
+| `packages/@ck/cells/src/registry/types.ts` | CellRegistration, TypedPort, PortType, CellCategory type definitions | 60 |
+| `packages/@ck/cells/src/registry/index.ts` | Barrel export | 5 |
+
+**Verification gate:** All existing cell types register via the new registry. `cellRegistry.list()` returns all registered types with correct categories. Lazy loading verified by confirming no cell component code is in the initial bundle (Vite bundle analyzer).
+
 ### 0.3 Extract notebook feature modules to apps/notebook/src/features/
 
 Move the 7 notebook-specific feature modules from data-canvas into the new notebook app. These modules are notebook-specific and have no consumers outside the notebook.
@@ -300,6 +369,91 @@ Create a typed message bus for cross-app communication. This enables the bidirec
 **Target file:** `packages/@ck/cells/src/FormCell.tsx`
 **Estimated lines:** 25
 
+### 1.8b WritebackCell component
+
+**What exists:** No cell type or component.
+
+**What to build:** A dedicated write-to-database cell (Hex pattern) with:
+- Connection context dropdown selecting from configured data sources
+- DataFrame input selector (upstream DataFrame variable)
+- Target table configuration (schema, table name, write mode: append/replace/upsert)
+- Column mapping UI with type coercion options
+- Dry-run preview showing first N rows + SQL DDL
+- Execution modes: manual, on-session-start, on-schedule
+
+**Target file:** `packages/@ck/cells/src/components/WritebackCell.tsx`
+**Estimated lines:** 180
+
+**Research justification:** Synthesis Section 5 Tier 4 -- "Hex has a dedicated Writeback cell type. No other notebook has a dedicated write-back cell type." This is separated from the SQL cell to keep write operations explicit and auditable.
+
+### 1.8c FilterCell component
+
+**What exists:** No cell type or component.
+
+**What to build:** A no-code visual filter builder generating SQL WHERE clauses (Hex pattern) with:
+- Column picker from upstream DataFrame schema
+- Operator selector per column (equals, contains, between, in, is null, regex)
+- AND/OR grouping with drag-and-drop reordering
+- Live preview of generated WHERE clause
+- Output: filtered DataFrame variable with green pill indicator
+
+**Target file:** `packages/@ck/cells/src/components/FilterCell.tsx`
+**Estimated lines:** 160
+
+**Research justification:** Hex Filter cell pattern -- no-code filtering lowers the barrier for non-SQL users. Filter logic is inspectable and version-controlled, unlike ad-hoc pandas operations.
+
+### 1.8d PivotCell component
+
+**What exists:** No cell type or component.
+
+**What to build:** A no-code pivot table with drag-and-drop column/row/value assignment (Hex pattern) with:
+- Drag-and-drop wells for rows, columns, values, and filters
+- Aggregation selector per value field (sum, mean, median, count, min, max, std, custom)
+- Subtotals and grand totals toggle
+- Heatmap conditional formatting option
+- Output: pivoted DataFrame variable
+- Export to CSV/Excel
+
+**Target file:** `packages/@ck/cells/src/components/PivotCell.tsx`
+**Estimated lines:** 220
+
+**Research justification:** Pivot tables are a core data exploration primitive. Hex and Sigma provide drag-and-drop pivot interfaces. Building this as a dedicated cell type makes pivot operations reproducible and composable in the DAG.
+
+### 1.8e KPICell component
+
+**What exists:** MetricCell (section 1.9) covers basic large-number display. KPICell is its enhanced successor.
+
+**What to build:** A single-value / KPI display cell (Hex BigNumber + Deepnote pattern) with:
+- Large formatted number with configurable format (currency, percent, integer, decimal, custom)
+- Label and subtitle text
+- Trend arrow (up/down/flat) with percentage change
+- Sparkline showing historical values from a DataFrame column
+- Comparison baseline (vs. previous period, vs. target)
+- Observatory color coding (green #00e09e for positive, red #ff5a5a for negative, amber #ffb020 for flat)
+- Multiple KPIs per cell in a horizontal strip layout
+
+**Target file:** `packages/@ck/cells/src/components/KPICell.tsx`
+**Estimated lines:** 150
+
+**Research justification:** Synthesis Section 5 Tier 2 -- "Hex Single Value cell (aggregation, comparison mode, sparkline, outputs Python variable), Deepnote Big Number block." Dedicated KPI cells are common in BI tools but absent from data science notebooks.
+
+### 1.8f ScratchpadCell component
+
+**What exists:** ScratchCell (section 1.7) provides a minimal plaintext editor. ScratchpadCell is a distinct ephemeral debugging cell.
+
+**What to build:** An ephemeral debugging cell that does NOT participate in the reactive DAG (Marimo pattern) with:
+- Full code editor (Monaco, Python syntax)
+- Execution capability with output display
+- Visual distinction: dashed border, muted background, "Ephemeral" badge
+- Excluded from notebook export by default (toggle to include)
+- Excluded from dependency graph -- reads variables but never defines them for downstream use
+- Auto-collapse after N minutes of inactivity (configurable)
+
+**Target file:** `packages/@ck/cells/src/components/ScratchpadCell.tsx`
+**Estimated lines:** 100
+
+**Research justification:** Marimo's scratchpad pattern -- valuable for debugging without polluting the reactive DAG. Users frequently need throwaway cells to inspect intermediate values; making this a first-class type prevents accidental side effects.
+
 ### 1.9 New cell types -- DataFrame, Metric/KPI, Profile, Map
 
 Add 4 new data-oriented cell types not in the original 12.
@@ -384,7 +538,31 @@ Extend the CellType literal union with new types: `dataframe`, `metric`, `profil
 
 **Target file:** `apps/notebook/src/components/SearchReplace.tsx` (new, ~120 lines)
 
-**Phase 1 totals:** ~1,850 new lines, ~15 new files, 16 cell types functional (up from 5), 0 novel features (all standard).
+**Phase 1 totals:** ~2,660 new lines, ~20 new files, 21 cell types functional (up from 5), 0 novel features (all standard).
+
+### SQL Cell Implementation
+
+The SQL cell is the most complex standard cell type, with 25+ distinct implementations across the industry. This subsection consolidates the implementation guidance from the research synthesis.
+
+**Connection context:** Cell-level dropdown selecting from configured data sources (Hex/Deepnote pattern). Each SQL cell independently selects its database connection. When no connection is selected, the cell defaults to DuckDB in-memory mode for querying local DataFrames. The connection list is populated from `@ck/connectors` registered data sources.
+
+**Result binding:** SQL cell output is bound to a named DataFrame variable with a colored pill indicator -- green pill = materialized DataFrame (result fetched into memory), purple pill = Query/lazy reference (pointer to upstream query, not yet materialized). The variable name defaults to the cell label but is user-editable. Downstream Python cells access the result via the variable name directly (e.g., `df = orders_by_region`).
+
+**Variable templating:** Jinja2 templating engine with:
+- `{{ variable_name }}` -- scalar interpolation (string, number, date)
+- `{{ list_var | array }}` -- expands Python list to SQL IN-clause format: `('a', 'b', 'c')`
+- `{% if condition %}...{% endif %}` -- conditional SQL blocks
+- `{% for item in collection %}...{% endfor %}` -- loop expansion
+- Widget integration: `{{ slider_value }}` automatically references upstream widget cell outputs
+- Escaping: all interpolated values are parameterized (never raw string concatenation) to prevent SQL injection
+
+**CTE chaining:** When a downstream SQL cell references an upstream SQL cell's output variable, the engine compiles both queries as a CTE chain at execution time (Hex/Count pattern). Example: if cell A defines `active_users` and cell B references `{{ active_users }}`, the compiled query becomes `WITH active_users AS (SELECT ... FROM cell_A_query) SELECT ... FROM active_users WHERE ...`. This avoids materializing intermediate results when both cells target the same connection.
+
+**DuckDB in-memory mode:** When the connection is set to "In-Memory" or when querying local DataFrame variables, the cell uses DuckDB-WASM (for Pyodide/browser mode) or DuckDB Python (for kernel mode). DataFrames are registered as virtual tables automatically. This enables SQL queries over pandas/polars DataFrames without a database server.
+
+**Write-back:** Write operations use the separate WritebackCell type (section 1.8b), not inline SQL DML. The SQL cell is read-only by design. This separation makes destructive operations explicit and auditable.
+
+**Dialect handling:** The SQL dialect is determined by the selected connection (PostgreSQL, MySQL, SQLite, BigQuery, Snowflake, etc.). When the connection is DuckDB (in-memory), DuckDB dialect is auto-selected. Syntax highlighting and autocomplete adapt to the active dialect. Future: SQLGlot transpilation for cross-dialect portability (SQLMesh pattern).
 
 ---
 
@@ -679,6 +857,35 @@ Logic: Widget cell defines a variable (e.g., `threshold = 0.5`). When the slider
 Config panel that appears when a widget cell is selected: widget type selector, label, variable name, min/max/step (for sliders), options list (for dropdowns), default value.
 
 **Phase 5 totals:** ~850 new lines, ~12 new files. Widgets are a prerequisite for interactive dashboards and are used by the living pipeline (Phase 9).
+
+### 5.5 Reactivity paradigm selection
+
+The research synthesis documents 7 distinct widget reactivity paradigms across platforms. ContextKeeper adopts one primary paradigm with one reference pattern for future JS cell support.
+
+**RECOMMENDED -- Marimo UIElementRegistry pattern:**
+- Each widget type extends a generic `UIElement<S, T>` where S is the internal state type and T is the exposed value type
+- Widget registers its value in the global execution scope under its declared variable name
+- Value change triggers DAG re-execution via the Phase 2 reactive engine (staleness propagation)
+- `UIElementRegistry` tracks widget objects by `object_id`, enabling hierarchical widgets (e.g., a form containing multiple inputs)
+- Lens mechanism allows nested widget access (e.g., `form.value["field_name"]`)
+- Works in Pyodide/browser mode -- no kernel comm channel required
+- Scale: supports 25+ widget types (Marimo's current count) with a single reactivity mechanism
+- Path: `apps/notebook/src/engine/reactive/widget-registry.ts`
+
+**REFERENCE -- Observable Generators.input pattern (for JS cells if added later):**
+- `viewof` protocol creates dual variables: DOM element + extracted value
+- `Generators.input()` async generator yields on every DOM `input` event
+- Any DOM element with `.value` property and `input` event is automatically compatible
+- Entirely client-side, zero server round-trips
+- Relevant only if/when JavaScript cells gain first-class reactive support
+
+**NOT RECOMMENDED -- ipywidgets comm protocol:**
+- Requires active kernel with ZMQ/WebSocket comm channel
+- Heavy serialization overhead (JSON over comm messages, delta compression with `hold_sync()`)
+- 40+ widget types but tightly coupled to Jupyter kernel infrastructure
+- Not Pyodide-compatible without significant shimming
+- `sync=True` traitlets create implicit bidirectional state that conflicts with DAG-based reactivity
+- Legacy ecosystem value (ipyleaflet, bqplot, ipyvolume) but not worth the architectural cost for a new platform
 
 ---
 
@@ -1298,43 +1505,68 @@ Complete inventory of every file created or moved across all phases.
 
 ## Appendix B: Cell Type Registry Plan
 
-| Cell Type | ID | Research Tier | Phase | Exists Today | Best Prior Art | Novel? | Priority |
-|-----------|----|-------------|-------|-------------|---------------|--------|----------|
-| Python Code | `code` | T1: Compute | 0 (exists) | Yes -- fully ported | Jupyter, Marimo, Hex | No | -- |
-| Markdown | `md` | T2: Display | 1.1 (upgrade) | Partial -- missing KaTeX | Jupyter, Observable | No | HIGH |
-| SQL | `sql` | T1: Compute | 0 (exists) | Yes -- fully ported | Hex, Databricks | No | -- |
-| JavaScript | `js` | T1: Compute | 0 (exists) | Yes -- fully ported | Observable | No | -- |
-| Raw | `raw` | T1: Compute | 0 (exists) | Yes -- fully ported | Jupyter | No | -- |
-| Visualization | `viz` | T2: Display | 1.3 | Type defined, no component | Plotly, Vega-Lite | No | HIGH |
-| Prompt/LLM | `prompt` | T5: AI | 1.2 | Type defined, no component | Hex Magic, JupyterAI | Partial | HIGH |
-| Mermaid | `mermaid` | T2: Display | 1.4 | Type defined, no component | Deepnote | No | MED |
-| HTML | `html` | T2: Display | 1.5 | Type defined, no component | Jupyter | No | MED |
-| LaTeX | `latex` | T2: Display | 1.6 | Type defined, no component | Jupyter (MathJax) | No | MED |
-| Scratch | `scratch` | T1: Compute | 1.7 | Type defined, no component | -- | No | LOW |
-| Form/Widget | `form` | T3: Input | 5 | Type defined, no component | ipywidgets, Marimo | No | MED |
-| DataFrame | `dataframe` | T4: Data | 1.9 | No | Positron, Hex | No | HIGH |
-| Metric/KPI | `metric` | T2: Display | 1.9 | No | Hex tiles, Evidence | No | HIGH |
-| Profile | `profile` | T4: Data | 1.9 | No | Deepnote, ydata-profiling | No | MED |
-| Map | `map` | T2: Display | 1.9 | No | Folium, Kepler.gl | No | MED |
-| Slider | `slider` | T3: Input | 5.2 | No | Marimo mo.ui.slider | No | MED |
-| Dropdown | `dropdown` | T3: Input | 5.2 | No | Marimo mo.ui.dropdown | No | MED |
-| MultiSelect | `multiselect` | T3: Input | 5.2 | No | Marimo, Streamlit | No | MED |
-| DatePicker | `datepicker` | T3: Input | 5.2 | No | Marimo, Streamlit | No | LOW |
-| TextInput | `textinput` | T3: Input | 5.2 | No | Marimo, Streamlit | No | MED |
-| Toggle | `toggle` | T3: Input | 5.2 | No | Marimo, Streamlit | No | LOW |
-| FileUpload | `fileupload` | T3: Input | 5.2 | No | Marimo, Streamlit | No | MED |
-| NumberInput | `numberinput` | T3: Input | 5.2 | No | Marimo, Streamlit | No | LOW |
-| Contract | `contract` | T6: Pipeline | 3 | No | dlt, Pandera | Partial | HIGH |
-| Branch | `branch` | T6: Pipeline | 7 | No | Livebook sections | Partial | HIGH |
-| Comparison | `comparison` | T6: Pipeline | 7 | No | mlxtend, SageMaker | NOVEL | HIGH |
-| Decision/Router | `decision` | T6: Pipeline | 10.2 | No | KNIME IF Switch | Partial | MED |
-| Tournament | `tournament` | T7: Agent | 10.1 | No | PyCaret compare_models | Partial | MED |
-| Agent | `agent` | T7: Agent | 8 | No | LangGraph, AutoGen | NOVEL | HIGH |
-| Fine-Tune Dataset | `ft-dataset` | T8: Infra | 10.3 | No | -- | Partial | LOW |
-| Fine-Tune Train | `ft-train` | T8: Infra | 10.3 | No | -- | Partial | LOW |
-| Fine-Tune Eval | `ft-eval` | T8: Infra | 10.3 | No | -- | Partial | LOW |
+### Tier A -- Phase 1, ship immediately
 
-**Totals:** 33 cell types planned across 8 tiers. 5 exist today, 7 type-defined, 21 entirely new. 2 confirmed novel, 6 partial novel.
+| Cell Type | Category | Phase | Exists Today | Best Prior Art | Novel? | Complexity |
+|-----------|----------|-------|-------------|----------------|--------|------------|
+| code | Compute | Phase 1 | Yes | Jupyter | No | S |
+| markdown | Display | Phase 1 | Yes | Jupyter | No | S |
+| sql | Compute | Phase 1 | Partial | Hex | No | L |
+| prompt | AI | Phase 1 | Type only | Hex AI | No | M |
+| table | Data | Phase 1 | Yes (DataFrameRenderer) | Deepnote | No | S |
+| chart | Display | Phase 1 | Type only | Observable Plot | No | L |
+| kpi | Display | Phase 1 | No | Hex BigNumber | No | S |
+| form-slider | Input | Phase 1 | No | Marimo mo.ui.slider | No | M |
+| form-dropdown | Input | Phase 1 | No | Marimo mo.ui.dropdown | No | M |
+| form-text | Input | Phase 1 | No | Marimo mo.ui.text | No | S |
+| raw | Compute | Phase 1 | Yes | Jupyter | No | S |
+| html | Display | Phase 1 | Type only | Observable | No | S |
+| latex | Display | Phase 1 | Type only | Jupyter | No | S |
+| mermaid | Display | Phase 1 | Type only | Livebook | No | M |
+
+### Tier B -- Phase 1-3, build soon
+
+| Cell Type | Category | Phase | Exists Today | Best Prior Art | Novel? | Complexity |
+|-----------|----------|-------|-------------|----------------|--------|------------|
+| writeback | Data | Phase 1 | No | Hex Writeback | No | M |
+| filter | Data | Phase 1 | No | Hex Filter | No | M |
+| pivot | Data | Phase 1 | No | Hex Pivot | No | M |
+| scratchpad | Compute | Phase 1 | No | Marimo | Partial | S |
+| profile | Data | Phase 2 | No | ydata-profiling | No | L |
+| map | Display | Phase 2 | No | Kepler.gl | No | L |
+| image | Display | Phase 2 | No | Jupyter | No | S |
+| video | Display | Phase 2 | No | Observable | No | S |
+| audio | Display | Phase 2 | No | Observable | No | S |
+| js | Compute | Phase 1 | Yes | Observable | No | S |
+| r | Compute | Phase 3 | No | RStudio | No | L |
+| julia | Compute | Phase 3 | No | Pluto.jl | No | L |
+
+### Tier C -- Phase 7-9, competitive differentiation
+
+| Cell Type | Category | Phase | Exists Today | Best Prior Art | Novel? | Complexity |
+|-----------|----------|-------|-------------|----------------|--------|------------|
+| branch | Pipeline | Phase 7 | No | None | Yes | XL |
+| comparison | Pipeline | Phase 7 | No | None | Yes | L |
+| contract | Pipeline | Phase 3 | No | dlt (partial) | Partial | L |
+| router | Pipeline | Phase 8 | No | KNIME (partial) | Partial | M |
+| merge | Pipeline | Phase 7 | No | None | Yes | M |
+| tournament | Pipeline | Phase 10 | No | PyCaret (partial) | Partial | L |
+| agent | AI | Phase 8 | No | None | Yes (confirmed) | XL |
+| live | Pipeline | Phase 9 | No | Deephaven (partial) | Partial | XL |
+
+### Tier D -- Phase 10-12, advanced
+
+| Cell Type | Category | Phase | Exists Today | Best Prior Art | Novel? | Complexity |
+|-----------|----------|-------|-------------|----------------|--------|------------|
+| finetune | AI | Phase 10 | No | None | Yes | L |
+| deploy | Meta | Phase 11 | No | None | Yes | L |
+| voice | Meta | Phase 10 | No | Colab (partial) | Partial | M |
+| approval | Pipeline | Phase 10 | No | Livebook Kino.interrupt! | Partial | M |
+| webhook | Meta | Phase 11 | No | None | Yes | M |
+| schema-browser | Data | Phase 2 | No | Datalore | No | M |
+| cache | Pipeline | Phase 9 | No | Marimo mo.cache | No | M |
+
+**Totals:** 51 cell types planned across 4 tiers and 11 categories. 5 exist today fully, 5 type-defined, 41 entirely new. 5 confirmed novel, 6 partial prior art, 40 standard.
 
 ---
 
@@ -1464,7 +1696,7 @@ Every implementation task traces back to a specific finding in the synthesis doc
 | Total moved files | ~18 |
 | Total estimated new lines | ~13,245 |
 | Total moved lines | ~2,800 |
-| Cell types at completion | 33 (up from 5 fully functional today) |
+| Cell types at completion | 51 (up from 5 fully functional today) |
 | Novel features | 14 (2 confirmed novel, 8 partial prior art, 4 infrastructure) |
 | Confirmed novel features | Agent Cells as DAG nodes (Phase 8), Cell-Level RBAC (Phase 12) |
 | Critical path length | 4 phases (0 -> 2 -> 3 -> 7) |
